@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskSheet — Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F5; --panel:#FFFFFF; --ink:#17252A; --ink2:#5A6B70; --line:#E2E8E6;
+    --primary:#0E7C66; --primary-soft:#E1F2EC;
+    --be:#2563EB; --be-soft:#E4EDFF; --ui:#D97706; --ui-soft:#FDF0DC;
+    --done:#16A34A; --prog:#2563EB; --todo:#94A3A8;
+    --gap:#B9C2C4; --wknd:#EFF2F1;
+    --radius:10px;
+    font-size:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif}
+
+  /* ---------- Sidebar ---------- */
+  aside{width:216px;background:#0F1B19;color:#C8D4D0;padding:20px 14px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+  .logo{font-family:'Space Grotesk';font-weight:700;font-size:19px;color:#fff;letter-spacing:.3px;margin-bottom:4px}
+  .logo span{color:#3ED8AE}
+  .feat-pick{background:#1B2B28;border:1px solid #2A3E3A;border-radius:8px;padding:9px 11px;margin:10px 0 16px;cursor:pointer}
+  .feat-pick .fid{font-family:'IBM Plex Mono';font-size:11px;color:#3ED8AE}
+  .feat-pick .fname{font-size:13px;color:#fff;font-weight:500;margin-top:2px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13.5px;color:#9FB1AC}
+  .nav-item:hover{background:#1B2B28;color:#fff}
+  .nav-item.active{background:#173B32;color:#fff;font-weight:600}
+  .nav-item .ic{width:17px;text-align:center}
+  .side-foot{margin-top:auto;font-size:12px;color:#5F736E;border-top:1px solid #223531;padding-top:12px}
+  .avatar{display:inline-flex;width:22px;height:22px;border-radius:50%;background:#3ED8AE;color:#0F1B19;font-weight:700;font-size:10.5px;align-items:center;justify-content:center;margin-right:8px}
+
+  /* ---------- Main ---------- */
+  main{flex:1;padding:22px 28px;min-width:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:16px;flex-wrap:wrap}
+  .topbar h1{font-size:21px;font-weight:700}
+  .topbar h1 .mono{font-size:13px;color:var(--primary);font-weight:500;vertical-align:2px;margin-left:8px}
+  .est-chip{display:flex;gap:10px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-size:12.5px;color:var(--ink2)}
+  .chip b{display:block;font-size:14px;color:var(--ink);font-family:'Space Grotesk'}
+  .chip.hero{background:var(--primary);border-color:var(--primary);color:#D3EFE6}
+  .chip.hero b{color:#fff}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .toolbar{display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .toolbar input[type=text]{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font:inherit;font-size:13px;width:210px}
+  select.flt{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+  .btn{border:0;border-radius:7px;padding:8px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .btn.pri{background:var(--primary);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .spacer{flex:1}
+  .hint{font-size:12px;color:var(--ink2)}
+
+  /* ---------- Sheet table ---------- */
+  .sheetwrap{overflow-x:auto}
+  table.sheet{border-collapse:collapse;width:100%;font-size:13px;min-width:1150px}
+  .sheet th{position:sticky;top:0;background:#F7FAF9;border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2);cursor:pointer;white-space:nowrap}
+  .sheet th:hover{color:var(--primary)}
+  .sheet td{border-bottom:1px solid #EDF1F0;padding:8px 10px;white-space:nowrap;vertical-align:middle}
+  .sheet tr:hover td{background:#F7FBFA}
+  .sheet td.num{font-family:'IBM Plex Mono';text-align:right}
+  .sheet td[contenteditable]:focus{outline:2px solid var(--primary);outline-offset:-2px;background:#fff;border-radius:4px}
+  .tid{font-family:'IBM Plex Mono';font-size:12.5px;font-weight:500}
+  .tag{display:inline-block;border-radius:5px;padding:2px 8px;font-size:11.5px;font-weight:600}
+  .tag.be{background:var(--be-soft);color:var(--be)} .tag.ui{background:var(--ui-soft);color:var(--ui)}
+  .link-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--primary);background:var(--primary-soft);border-radius:5px;padding:2px 7px;cursor:pointer;font-family:'IBM Plex Mono'}
+  .who{display:inline-flex;align-items:center;gap:6px}
+  .who .av{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#fff}
+  .st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;border:0;background:none;cursor:pointer;font-family:inherit}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .sheet tfoot td{background:#F7FAF9;font-weight:600;border-top:2px solid var(--line)}
+  .addrow td{color:var(--ink2);cursor:pointer;font-style:italic}
+  .addrow:hover td{color:var(--primary);background:var(--primary-soft)!important}
+  .rowmenu{opacity:0;cursor:pointer;color:var(--ink2);padding:0 4px}
+  tr:hover .rowmenu{opacity:1}
+  .trunc{max-width:190px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;color:var(--ink2)}
+
+  /* ---------- Timeline ---------- */
+  .tl-legend{display:flex;gap:16px;align-items:center;font-size:12.5px;color:var(--ink2);padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .lg{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:4px}
+  .tlwrap{overflow-x:auto;padding-bottom:8px}
+  .tl-grid{display:grid;min-width:980px}
+  .tl-head{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--ink2);text-align:center;padding:6px 0 4px;border-bottom:1px solid var(--line)}
+  .tl-head .dow{display:block;font-size:9.5px;letter-spacing:.5px}
+  .tl-head.wk{background:var(--wknd);color:#ADB8B5}
+  .tl-head.today{color:var(--primary);font-weight:700}
+  .lane-label{padding:10px 12px;border-bottom:1px solid #EDF1F0;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .lane-label b{font-size:13px}
+  .lane-label small{color:var(--ink2);font-size:11.5px}
+  .lane-label .fin{font-family:'IBM Plex Mono';font-size:11px;color:var(--primary);font-weight:600}
+  .daycell{border-bottom:1px solid #EDF1F0;border-right:1px dashed #EEF2F1;height:52px;position:relative;cursor:pointer}
+  .daycell.wk{background:var(--wknd);cursor:default;background-image:repeating-linear-gradient(135deg,transparent,transparent 5px,rgba(0,0,0,.025) 5px,rgba(0,0,0,.025) 10px)}
+  .daycell.gap{background-image:repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4 6px,#EDF1F0 6px,#EDF1F0 12px)}
+  .daycell.gap::after{content:"busy";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;color:#7C8C89;letter-spacing:.5px}
+  .fill{position:absolute;inset:6px 2px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono';font-size:10px;font-weight:600;color:#fff;overflow:hidden}
+  .fill.be{background:var(--be)} .fill.ui{background:var(--ui)}
+  .fill.half{width:calc(50% - 3px)}
+  .fill.start{border-top-left-radius:8px;border-bottom-left-radius:8px}
+  .todayline{position:absolute;top:0;bottom:0;width:2px;background:var(--primary);left:0;opacity:.65;pointer-events:none}
+  .tl-note{padding:12px 14px;border-top:1px solid var(--line);background:#FBFDFC;font-size:13px;color:var(--ink2)}
+  .tl-note b{color:var(--ink)}
+
+  /* ---------- Report ---------- */
+  .rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:1000px){.rep-grid{grid-template-columns:1fr}}
+  .card h3{font-size:14.5px;padding:13px 14px;border-bottom:1px solid var(--line)}
+  .wl{padding:14px}
+  .wl-row{display:grid;grid-template-columns:150px 1fr 150px;gap:10px;align-items:center;margin-bottom:13px}
+  .bar{height:22px;background:#EFF3F2;border-radius:6px;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%}
+  .bar .d{background:var(--be)} .bar .t{background:#7FA8F5}
+  .bar.uic .d{background:var(--ui)} .bar.uic .t{background:#EFC078}
+  .wl-num{font-family:'IBM Plex Mono';font-size:11.5px;color:var(--ink2);text-align:right}
+  .alerts{padding:14px;display:flex;flex-direction:column;gap:9px}
+  .alert{border-radius:8px;padding:10px 12px;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+  .alert.warn{background:#FEF6E7;color:#8A5A00}
+  .alert.err{background:#FDECEC;color:#A03030}
+  .alert.ok{background:var(--primary-soft);color:#0A5D4C}
+
+  /* ---------- Notes ---------- */
+  .note-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fff;margin-bottom:12px}
+  .note-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin-bottom:8px}
+  .note-meta .tagp{background:var(--primary-soft);color:var(--primary);border-radius:5px;padding:1px 7px;font-weight:600;font-size:11px}
+  .note-body{font-size:13.5px;line-height:1.55}
+  .note-body ul{padding-left:18px;margin-top:6px}
+  .newnote{width:100%;border:1.5px dashed var(--line);border-radius:10px;padding:13px;background:none;color:var(--ink2);font:inherit;cursor:pointer;font-size:13px}
+  .newnote:hover{border-color:var(--primary);color:var(--primary)}
+
+  .page{display:none} .page.on{display:block}
+
+  /* ---------- Import modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(10,20,18,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal-bg.on{display:flex}
+  .modal{background:#fff;border-radius:14px;width:720px;max-width:94vw;max-height:88vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .modal-head h2{font-size:16px}
+  .modal-head .x{cursor:pointer;color:var(--ink2);font-size:18px;border:0;background:none}
+  .modal-body{padding:16px 18px}
+  .drop{border:1.5px dashed #B9C7C3;border-radius:10px;padding:18px;text-align:center;color:var(--ink2);font-size:13px;background:#FBFDFC;margin-bottom:16px}
+  .drop b{color:var(--primary)}
+  .drop .fname2{display:inline-block;margin-top:6px;background:var(--primary-soft);color:var(--primary);border-radius:6px;padding:3px 10px;font-family:'IBM Plex Mono';font-size:12px}
+  .map-title{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink2);margin:14px 0 8px;font-weight:600}
+  table.map{border-collapse:collapse;width:100%;font-size:12.5px}
+  .map th{background:#F7FAF9;text-align:left;padding:7px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink2);border-bottom:1px solid var(--line)}
+  .map td{padding:6px 10px;border-bottom:1px solid #EDF1F0;white-space:nowrap}
+  .map td.mono{font-size:12px}
+  .map select{border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px;background:#fff}
+  .auto{font-size:10.5px;color:var(--primary);background:var(--primary-soft);border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:600}
+  .opts{display:flex;gap:18px;margin:14px 0;font-size:13px;color:var(--ink);flex-wrap:wrap}
+  .opts label{display:inline-flex;align-items:center;gap:6px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid var(--line);background:#FBFDFC;position:sticky;bottom:0}
+  .toast{position:fixed;bottom:22px;right:22px;background:#10241F;color:#D9F2E9;border-radius:10px;padding:12px 16px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:60}
+  .toast.on{display:block}
+  .toast b{color:#3ED8AE}
+  .banner{background:#10241F;color:#BFE8DB;border-radius:10px;padding:10px 16px;font-size:12.5px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+  .banner b{color:#3ED8AE}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo">Task<span>Sheet</span></div>
+  <div class="feat-pick">
+    <div class="fid">PAY-88</div>
+    <div class="fname">Payment Refund Flow ▾</div>
+  </div>
+  <div class="nav-item active" data-page="sheet"><span class="ic">▦</span> Sheet</div>
+  <div class="nav-item" data-page="timeline"><span class="ic">📅</span> Timeline</div>
+  <div class="nav-item" data-page="report"><span class="ic">📊</span> Report</div>
+  <div class="nav-item" data-page="notes"><span class="ic">✎</span> Notes</div>
+  <div class="side-foot"><span class="avatar">AN</span>an@team.dev · Log out</div>
+</aside>
+
+<main>
+  <div class="banner">🧪 <span><b>Mockup</b> — fake data for UI review. Try: click an effort cell on the Sheet to edit · click a day cell on the Timeline to toggle a "busy" gap · click a status to cycle it.</span></div>
+
+  <div class="topbar">
+    <h1 id="pageTitle">Sheet <span class="mono">PAY-88 · Payment Refund Flow</span></h1>
+    <div class="est-chip">
+      <div class="chip">Code complete<b id="estDone">Thu 13 Aug</b></div>
+      <div class="chip hero">Demo-ready<b id="estDemo">Fri 14 Aug</b></div>
+    </div>
+  </div>
+
+  <!-- ================= SHEET ================= -->
+  <section class="page on" id="page-sheet">
+    <div class="card">
+      <div class="toolbar">
+        <input type="text" placeholder="🔍  Search ticket / title…">
+        <select class="flt"><option>Assignee: All</option><option>Alice</option><option>Ben</option><option>Cara</option><option>Dan</option></select>
+        <select class="flt"><option>Type: All</option><option>BE</option><option>UI</option></select>
+        <select class="flt"><option>Status: All</option><option>Todo</option><option>In progress</option><option>Done</option></select>
+        <span class="hint">Click a header to sort</span>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="importBtn">⬆ Import CSV</button>
+        <button class="btn ghost">Feature note ▾</button>
+        <button class="btn pri">+ Task</button>
+      </div>
+      <div class="sheetwrap">
+      <table class="sheet">
+        <thead><tr>
+          <th>#</th><th>Ticket ↑</th><th>Title</th><th>Type</th><th>Link</th>
+          <th>BE assignee</th><th>UI assignee</th>
+          <th>Dev</th><th>Test</th><th>Total</th><th>Status</th><th>Note</th><th></th>
+        </tr></thead>
+        <tbody id="sheetBody"></tbody>
+        <tfoot><tr>
+          <td colspan="7">Total (8 tasks shown)</td>
+          <td class="num" id="sumDev">—</td><td class="num" id="sumTest">—</td><td class="num" id="sumTot">—</td>
+          <td colspan="3"></td>
+        </tr></tfoot>
+      </table>
+      </div>
+      <div class="sheetwrap"><table class="sheet"><tbody>
+        <tr class="addrow"><td style="min-width:1150px">＋ New task — type directly, Google-Sheets style…</td></tr>
+      </tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ================= TIMELINE ================= -->
+  <section class="page" id="page-timeline">
+    <div class="card">
+      <div class="tl-legend">
+        <span class="lg"><span class="sw" style="background:var(--be)"></span> BE task</span>
+        <span class="lg"><span class="sw" style="background:var(--ui)"></span> UI task</span>
+        <span class="lg"><span class="sw" style="background-image:repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4 4px,#EDF1F0 4px,#EDF1F0 8px)"></span> Gap (busy on another feature) — click a cell to toggle</span>
+        <span class="lg"><span class="sw" style="background:var(--wknd)"></span> Weekend (skipped)</span>
+        <span class="spacer"></span>
+        <span class="hint">Start date: <b class="mono" style="color:var(--ink)">Tue 4 Aug</b> ✎ · drag blocks to reorder</span>
+      </div>
+      <div class="tlwrap"><div id="tl"></div></div>
+      <div class="tl-note">📌 <b>Note:</b> Refund API depends on gateway sandbox — Alice to confirm access before Aug 6. Cara is off Aug 10–11 (gaps already marked).</div>
+    </div>
+  </section>
+
+  <!-- ================= REPORT ================= -->
+  <section class="page" id="page-report">
+    <div class="rep-grid">
+      <div class="card">
+        <h3>Workload by member</h3>
+        <div class="wl" id="wl"></div>
+      </div>
+      <div class="card">
+        <h3>Needs attention</h3>
+        <div class="alerts">
+          <div class="alert err">⛳ <span><b>Bottleneck:</b> Ben finishes last — <b>Thu 13 Aug</b>. Consider moving BE-104 to Alice.</span></div>
+          <div class="alert warn">⚠️ <span>2 tasks have no assignee: <span class="mono">UI-58, BE-106</span></span></div>
+          <div class="alert warn">⚠️ <span>1 task has no effort: <span class="mono">UI-58</span></span></div>
+          <div class="alert ok">✅ <span>Progress: 2/8 tasks done (25%) · 6.5 / 24.5 man-days completed</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Combined timeline — all members (read-only)</h3>
+      <div class="tlwrap"><div id="tl2"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= NOTES ================= -->
+  <section class="page" id="page-notes">
+    <div style="max-width:760px">
+      <div class="note-card">
+        <div class="note-meta"><span class="who"><span class="av" style="background:#2563EB">AL</span></span> <b>Alice</b> · Aug 2</div>
+        <div class="note-body">Refund flow v1 scope: full refunds only, no partial refunds. Partial refunds move to v2.
+          <ul><li>Gateway: reuse the existing payment credentials</li><li>Refunds older than 30 days require finance approval (out of scope for UI — blocked at BE only)</li></ul>
+        </div>
+      </div>
+      <div class="note-card">
+        <div class="note-meta"><span class="who"><span class="av" style="background:#D97706">CA</span></span> <b>Cara</b> · Aug 3</div>
+        <div class="note-body">Refund modal design is on Figma (link). Need PM confirmation on the "refund pending" copy before starting UI-56.</div>
+      </div>
+      <div class="note-card">
+        <div class="note-meta"><span class="who"><span class="av" style="background:#0E7C66">BE</span></span> <b>Ben</b> · Aug 4</div>
+        <div class="note-body">Webhook retry: the gateway retries up to 3 times, so we need an idempotency key in the <span class="mono">refund_txn</span> table. Noted on BE-104.</div>
+      </div>
+      <button class="newnote">＋ Add note (markdown supported)</button>
+    </div>
+  </section>
+</main>
+
+<!-- ================= IMPORT CSV MODAL ================= -->
+<div class="modal-bg" id="importModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Import tasks from Jira CSV</h2>
+      <button class="x" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drop">Drag & drop your Jira export here, or <b>browse…</b><br>
+        <span class="fname2">jira-export_PAY-88.csv · 12 rows detected</span>
+      </div>
+
+      <div class="map-title">Column mapping <span class="auto" style="margin-left:8px">auto-detected from Jira headers</span></div>
+      <table class="map">
+        <thead><tr><th>CSV column</th><th>Sample value</th><th>Maps to</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Issue key</td><td class="mono" style="color:var(--ink2)">PAY-201</td>
+            <td><select><option selected>Ticket ID</option><option>Title</option><option>— Ignore —</option></select><span class="auto">auto</span></td></tr>
+          <tr><td class="mono">Summary</td><td style="color:var(--ink2)">Refund receipt email</td>
+            <td><select><option selected>Title</option><option>Description</option><option>— Ignore —</option></select><span class="auto">auto</span></td></tr>
+          <tr><td class="mono">Description</td><td style="color:var(--ink2)">"Send email after refund succeeds…"</td>
+            <td><select><option selected>Description</option><option>Note</option><option>— Ignore —</option></select><span class="auto">auto</span></td></tr>
+          <tr><td class="mono">Assignee</td><td style="color:var(--ink2)">alice@team.dev</td>
+            <td><select><option selected>BE / UI Assignee (by type)</option><option>— Ignore —</option></select><span class="auto">auto</span></td></tr>
+          <tr><td class="mono">Labels</td><td class="mono" style="color:var(--ink2)">backend</td>
+            <td><select><option selected>Type (BE / UI)</option><option>Note</option><option>— Ignore —</option></select></td></tr>
+          <tr><td class="mono">Story Points</td><td class="mono" style="color:var(--ink2)">3</td>
+            <td><select><option selected>Dev Effort</option><option>Test Effort</option><option>— Ignore —</option></select></td></tr>
+          <tr><td class="mono">Status</td><td class="mono" style="color:var(--ink2)">In Progress</td>
+            <td><select><option>Status</option><option selected>— Ignore —</option></select></td></tr>
+        </tbody>
+      </table>
+
+      <div class="opts">
+        <label>Default type for unresolved rows:
+          <select><option>BE</option><option>UI</option></select></label>
+        <label>If ticket ID already exists:
+          <select><option selected>Skip row</option><option>Update existing task</option></select></label>
+      </div>
+      <div class="hint">Unmatched assignees are left unassigned · multiline descriptions and UTF-8 BOM are handled · invalid effort → 0 (warned).</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn pri" id="doImport">Import 12 tasks</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ <b>Import complete</b> — 10 created · 2 skipped (duplicate ticket ID) · 0 errors</div>
+
+<script>
+/* ---------------- Mock data ---------------- */
+const USERS = {alice:{n:'Alice',c:'#2563EB'},ben:{n:'Ben',c:'#0E7C66'},cara:{n:'Cara',c:'#D97706'},dan:{n:'Dan',c:'#7C3AED'}};
+const TASKS = [
+ {tid:'BE-101',title:'Refund API endpoint',type:'BE',link:'UI-55',be:'alice',ui:null,dev:4,test:1,st:'prog',note:'Waiting for sandbox access'},
+ {tid:'UI-55',title:'Refund request modal',type:'UI',link:'BE-101',be:null,ui:'cara',dev:3,test:1,st:'prog',note:''},
+ {tid:'BE-102',title:'Refund status webhook',type:'BE',link:'UI-56',be:'alice',ui:null,dev:2,test:0.5,st:'todo',note:''},
+ {tid:'UI-56',title:'Refund status badge + toast',type:'UI',link:'BE-102',be:null,ui:'cara',dev:1.5,test:0.5,st:'todo',note:'Waiting for PM copy'},
+ {tid:'BE-103',title:'Refund history query',type:'BE',link:null,be:'ben',ui:null,dev:2,test:0.5,st:'done',note:''},
+ {tid:'UI-57',title:'Refund history table',type:'UI',link:'BE-103',be:null,ui:'dan',dev:2.5,test:1,st:'todo',note:''},
+ {tid:'BE-104',title:'Idempotency + retry handling',type:'BE',link:null,be:'ben',ui:null,dev:3,test:1,st:'todo',note:'Needs idempotency key'},
+ {tid:'BE-105',title:'Refund permission check',type:'BE',link:null,be:'ben',ui:null,dev:1.5,test:0.5,st:'done',note:''},
+];
+const ST = {todo:['Todo','var(--todo)'],prog:['In progress','var(--prog)'],done:['Done','var(--done)']};
+
+/* ---------------- Sheet render ---------------- */
+function who(id){if(!id)return '<span style="color:#B7C2BF">— unassigned</span>';const u=USERS[id];
+ return `<span class="who"><span class="av" style="background:${u.c}">${u.n.slice(0,2).toUpperCase()}</span>${u.n}</span>`;}
+function renderSheet(){
+ const tb=document.getElementById('sheetBody');tb.innerHTML='';
+ let sd=0,st=0;
+ TASKS.forEach((t,i)=>{
+  sd+=t.dev;st+=t.test;
+  const s=ST[t.st];
+  tb.insertAdjacentHTML('beforeend',`<tr>
+   <td class="num" style="color:var(--ink2)">${i+1}</td>
+   <td class="tid">${t.tid}</td>
+   <td contenteditable spellcheck="false">${t.title}</td>
+   <td><span class="tag ${t.type.toLowerCase()}">${t.type}</span></td>
+   <td>${t.link?`<span class="link-badge">🔗 ${t.link}</span>`:'<span style="color:#C4CECB">＋ link</span>'}</td>
+   <td>${who(t.be)}</td><td>${who(t.ui)}</td>
+   <td class="num" contenteditable data-k="dev" data-i="${i}">${t.dev}</td>
+   <td class="num" contenteditable data-k="test" data-i="${i}">${t.test}</td>
+   <td class="num" style="font-weight:600" id="tot-${i}">${t.dev+t.test}</td>
+   <td><button class="st" data-i="${i}"><span class="dot" style="background:${s[1]}"></span>${s[0]}</button></td>
+   <td><span class="trunc">${t.note||'<i style="color:#C4CECB">—</i>'}</span></td>
+   <td class="rowmenu">⋯</td>
+  </tr>`);
+ });
+ document.getElementById('sumDev').textContent=sd.toFixed(1);
+ document.getElementById('sumTest').textContent=st.toFixed(1);
+ document.getElementById('sumTot').textContent=(sd+st).toFixed(1);
+}
+renderSheet();
+document.getElementById('sheetBody').addEventListener('blur',e=>{
+ const k=e.target.dataset.k;if(!k)return;
+ const i=+e.target.dataset.i,v=parseFloat(e.target.textContent)||0;
+ TASKS[i][k]=v;e.target.textContent=v;
+ document.getElementById('tot-'+i).textContent=TASKS[i].dev+TASKS[i].test;
+ renderSheet();renderTimelines();
+},true);
+document.getElementById('sheetBody').addEventListener('click',e=>{
+ const b=e.target.closest('.st');if(!b)return;
+ const i=+b.dataset.i,keys=Object.keys(ST),cur=keys.indexOf(TASKS[i].st);
+ TASKS[i].st=keys[(cur+1)%keys.length];renderSheet();
+});
+
+/* ---------------- Timeline ---------------- */
+const START=new Date(2026,7,4); // Tue Aug 4, 2026
+const NDAYS=14;
+const TODAY_IDX=0;
+const DOW=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const gaps={alice:new Set(),ben:new Set(),cara:new Set([6,7]),dan:new Set()}; // Cara off Aug 10–11
+function dayAt(i){const d=new Date(START);d.setDate(d.getDate()+i);return d;}
+function isWk(i){const g=dayAt(i).getDay();return g===0||g===6;}
+function fmt(d){return d.getDate()+' '+MON[d.getMonth()];}
+function fmtLong(d){return DOW[d.getDay()].charAt(0)+DOW[d.getDay()].slice(1).toLowerCase()+' '+fmt(d);}
+
+// pack tasks into day cells: map idx -> {task, half?, isStart}
+function schedule(userId){
+ const my=TASKS.filter(t=>(t.be===userId||t.ui===userId)&&t.st!=='done');
+ const cells={};let i=0,fin=null;
+ for(const t of my){
+  let left=t.dev;let started=false;
+  while(left>0&&i<NDAYS){
+   if(isWk(i)||gaps[userId].has(i)){i++;continue;}
+   const amt=Math.min(left,1);
+   cells[i]={t,half:amt===0.5,start:!started};started=true;
+   left-=amt;fin=i;i++;
+  }
+ }
+ return {cells,fin,total:my.reduce((s,t)=>s+t.dev,0)};
+}
+function buildGrid(el,editable){
+ const lanes=Object.keys(USERS);
+ let html=`<div class="tl-grid" style="grid-template-columns:160px repeat(${NDAYS},minmax(58px,1fr))">`;
+ html+=`<div class="tl-head" style="border-right:1px solid var(--line)"></div>`;
+ for(let i=0;i<NDAYS;i++){const d=dayAt(i);
+  html+=`<div class="tl-head ${isWk(i)?'wk':''} ${i===TODAY_IDX?'today':''}"><span class="dow">${DOW[d.getDay()]}</span>${fmt(d)}</div>`;}
+ let latest=null;
+ for(const u of lanes){
+  const {cells,fin,total}=schedule(u);
+  const finD=fin!=null?dayAt(fin):null;
+  if(finD&&(!latest||finD>latest))latest=finD;
+  html+=`<div class="lane-label"><b><span class="who"><span class="av" style="background:${USERS[u].c}">${USERS[u].n.slice(0,2).toUpperCase()}</span>${USERS[u].n}</span></b>
+    <small>${total} md remaining</small>${finD?`<span class="fin">✓ done ${fmtLong(finD)}</span>`:'<small>—</small>'}</div>`;
+  for(let i=0;i<NDAYS;i++){
+   const wk=isWk(i),g=gaps[u].has(i),c=cells[i];
+   let inner='';
+   if(c)inner=`<span class="fill ${c.t.type.toLowerCase()} ${c.half?'half':''} ${c.start?'start':''}" title="${c.t.tid} · ${c.t.title} · ${c.t.dev} md">${c.start?c.t.tid:''}</span>`;
+   html+=`<div class="daycell ${wk?'wk':''} ${g?'gap':''}" ${editable&&!wk?`data-u="${u}" data-d="${i}"`:''}>${i===TODAY_IDX?'<span class="todayline"></span>':''}${g?'':inner}</div>`;
+  }
+ }
+ html+='</div>';
+ el.innerHTML=html;
+ if(latest){
+  document.getElementById('estDone').textContent=fmtLong(latest);
+  let demo=new Date(latest);do{demo.setDate(demo.getDate()+1);}while(demo.getDay()===0||demo.getDay()===6);
+  document.getElementById('estDemo').textContent=fmtLong(demo);
+ }
+}
+function renderTimelines(){
+ buildGrid(document.getElementById('tl'),true);
+ buildGrid(document.getElementById('tl2'),false);
+ renderWorkload();
+}
+document.getElementById('tl').addEventListener('click',e=>{
+ const c=e.target.closest('.daycell');if(!c||!c.dataset.u)return;
+ const s=gaps[c.dataset.u],d=+c.dataset.d;
+ s.has(d)?s.delete(d):s.add(d);
+ renderTimelines();
+});
+
+/* ---------------- Report ---------------- */
+function renderWorkload(){
+ const el=document.getElementById('wl');let html='';
+ const max=Math.max(...Object.keys(USERS).map(u=>TASKS.filter(t=>t.be===u||t.ui===u).reduce((s,t)=>s+t.dev+t.test,0)),1);
+ for(const u of Object.keys(USERS)){
+  const my=TASKS.filter(t=>t.be===u||t.ui===u);
+  const dev=my.reduce((s,t)=>s+t.dev,0),test=my.reduce((s,t)=>s+t.test,0);
+  const isUI=my.some(t=>t.type==='UI'&&t.ui===u);
+  html+=`<div class="wl-row">
+    <span class="who"><span class="av" style="background:${USERS[u].c}">${USERS[u].n.slice(0,2).toUpperCase()}</span>${USERS[u].n} <small style="color:var(--ink2)">· ${my.length} tasks</small></span>
+    <div class="bar ${isUI?'uic':''}"><i class="d" style="width:${dev/max*100}%"></i><i class="t" style="width:${test/max*100}%"></i></div>
+    <span class="wl-num">${dev} dev + ${test} test = <b style="color:var(--ink)">${dev+test} md</b></span>
+  </div>`;
+ }
+ el.innerHTML=html;
+}
+renderTimelines();
+
+/* ---------------- Import modal ---------------- */
+const modal=document.getElementById('importModal');
+document.getElementById('importBtn').addEventListener('click',()=>modal.classList.add('on'));
+modal.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>modal.classList.remove('on')));
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('on');});
+document.getElementById('doImport').addEventListener('click',()=>{
+ modal.classList.remove('on');
+ const t=document.getElementById('toast');t.classList.add('on');
+ setTimeout(()=>t.classList.remove('on'),4500);
+});
+
+/* ---------------- Nav ---------------- */
+const TITLES={sheet:'Sheet',timeline:'Timeline',report:'Report',notes:'Notes'};
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>{
+ document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));n.classList.add('active');
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+ document.getElementById('page-'+n.dataset.page).classList.add('on');
+ document.getElementById('pageTitle').innerHTML=TITLES[n.dataset.page]+' <span class="mono">PAY-88 · Payment Refund Flow</span>';
+}));
+</script>
+</body>
+</html>

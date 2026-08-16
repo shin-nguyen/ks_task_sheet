@@ -1,0 +1,30 @@
+#!/bin/sh
+# Maven Wrapper startup script (classic downloader form).
+# Downloads maven-wrapper.jar on first run (per .mvn/wrapper/maven-wrapper.properties)
+# then delegates to it. Requires JAVA_HOME to be set, or `java` on PATH.
+# If you prefer, install Maven yourself and run `mvn` instead of `./mvnw`.
+
+set -e
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_JAR="$DIR/.mvn/wrapper/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$DIR/.mvn/wrapper/maven-wrapper.properties"
+
+if [ ! -f "$WRAPPER_JAR" ]; then
+  echo "Downloading Maven Wrapper..."
+  WRAPPER_URL=$(grep '^wrapperUrl=' "$WRAPPER_PROPERTIES" | cut -d'=' -f2-)
+  mkdir -p "$DIR/.mvn/wrapper"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$WRAPPER_JAR" "$WRAPPER_URL"
+  else
+    wget -q -O "$WRAPPER_JAR" "$WRAPPER_URL"
+  fi
+fi
+
+if [ -n "$JAVA_HOME" ]; then
+  JAVA_EXE="$JAVA_HOME/bin/java"
+else
+  JAVA_EXE="java"
+fi
+
+exec "$JAVA_EXE" -cp "$WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"

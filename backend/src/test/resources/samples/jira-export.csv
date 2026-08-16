@@ -1,0 +1,7 @@
+Issue key,Summary,Description,Assignee,Labels,Story Points,Status
+PAY-201,"Refund receipt email","Send email after refund succeeds.
+Include the refund amount and a link to the receipt.",alice@team.dev,backend,3,In Progress
+PAY-202,"Refund receipt email UI","Show a confirmation banner once the receipt email is queued.",cara@team.dev,frontend,2,To Do
+PAY-203,"Refund audit log","Record who approved each refund, with timestamp and reason, for compliance review.",ben@team.dev,backend,"2,5",To Do
+PAY-204,"Export refunds to CSV",,dan@team.dev,frontend,1,To Do
+PAY-205,"Retry failed refund webhook","Add retry with exponential backoff; alert on 3rd failure.",alice@team.dev,backend,not-a-number,To Do

@@ -1,0 +1,14 @@
+.env
+.DS_Store
+*.log
+
+# backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.idea/
+backend/*.iml
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+.claude
