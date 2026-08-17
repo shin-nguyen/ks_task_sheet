@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/v1/epics/{epicId}/timeline-configs")
@@ -24,6 +25,8 @@ public class TimelineController {
     private final EpicRepository epicRepository;
     private final UserRepository userRepository;
     private final EpicAccessService epicAccessService;
+
+    private static final Pattern GAP_DAY_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}(:AM|:PM)?$");
 
     public TimelineController(TimelineConfigRepository configRepository, EpicRepository epicRepository,
                                UserRepository userRepository, EpicAccessService epicAccessService) {
@@ -53,8 +56,14 @@ public class TimelineController {
             c.setUser(user);
             return c;
         });
+        List<String> gapDays = req.gapDays() != null ? req.gapDays() : List.of();
+        for (String entry : gapDays) {
+            if (!GAP_DAY_PATTERN.matcher(entry).matches()) {
+                throw ApiException.badRequest("INVALID_GAP_DAY", "Invalid gap day entry: " + entry);
+            }
+        }
         config.setStartDate(req.startDate());
-        config.setGapDays(req.gapDays() != null ? req.gapDays() : List.of());
+        config.setGapDays(gapDays);
         return TimelineConfigResponse.from(configRepository.save(config));
     }
 }

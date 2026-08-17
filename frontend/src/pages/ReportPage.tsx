@@ -7,8 +7,8 @@ import { Topbar, Chip } from '../components/layout/Topbar';
 import { Select } from '../components/ui/Select';
 import { TimelineGrid, type Lane } from '../components/timeline/TimelineGrid';
 import { Avatar } from '../components/ui/Avatar';
-import { computeLaneSchedules, defaultStartDateFor, formatLong, parseDateKey, startOfDay } from '../lib/scheduling';
-import type { SchedulableTask } from '../lib/scheduling';
+import { computeLaneSchedules, defaultStartDateFor, formatLong, parseDateKey, parseGapEntry, startOfDay } from '../lib/scheduling';
+import type { GapPortion, SchedulableTask } from '../lib/scheduling';
 
 export function ReportPage() {
   const { epicId } = useParams<{ epicId: string }>();
@@ -53,7 +53,10 @@ export function ReportPage() {
       if (!assignee) continue;
       const config = configs?.find((c) => c.userId === assignee.id);
       const startDate = config ? parseDateKey(config.startDate) : defaultStartDateFor(today);
-      const gapDays = new Set(config?.gapDays ?? []);
+      const gapDays = new Map<string, GapPortion>((config?.gapDays ?? []).map((entry) => {
+        const { date, portion } = parseGapEntry(entry);
+        return [date, portion];
+      }));
       if (!byUser.has(assignee.id)) byUser.set(assignee.id, { userId: assignee.id, name: assignee.name, tasks: [], startDate, gapDays });
       byUser.get(assignee.id)!.tasks.push(t);
     }
@@ -70,7 +73,7 @@ export function ReportPage() {
 
   const scheduleSummary = useMemo(() => {
     const probe = computeLaneSchedules(
-      lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDayKeys: l.gapDays })),
+      lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDays: l.gapDays })),
       windowStart,
       180
     );

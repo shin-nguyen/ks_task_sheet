@@ -5,7 +5,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button({ variant = 'ghost', className = '', ...props }: ButtonProps) {
-  const base = 'rounded-md px-4 py-2.5 text-[14.5px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+  const base =
+    'rounded-md px-4 py-2.5 text-[14.5px] font-semibold transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
   const styles = {
     primary: 'bg-primary text-white hover:bg-primary/90',
     ghost: 'bg-white border border-line text-ink hover:bg-gray-50',

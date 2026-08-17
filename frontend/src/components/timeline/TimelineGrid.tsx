@@ -1,14 +1,27 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Task } from '../../types';
-import { addDays, computeLaneSchedules, dateKey, daysBetween, dow, formatShort, formatLong, type LaneSchedule, type SchedulableTask } from '../../lib/scheduling';
+import {
+  addDays,
+  computeLaneSchedules,
+  dateKey,
+  daysBetween,
+  dow,
+  formatShort,
+  formatLong,
+  type GapPortion,
+  type LaneSchedule,
+  type SchedulableTask,
+} from '../../lib/scheduling';
 import { Avatar } from '../ui/Avatar';
+
+const GAP_STRIPE = 'bg-[repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4_6px,#EDF1F0_6px,#EDF1F0_12px)]';
 
 export interface Lane {
   userId: string;
   name: string;
   tasks: Task[]; // ordered by sort_order, active (non-DONE) only, already filtered to this assignee
   startDate: Date;
-  gapDays: Set<string>;
+  gapDays: Map<string, GapPortion>;
 }
 
 export function TimelineGrid({
@@ -18,7 +31,7 @@ export function TimelineGrid({
   today,
   editable,
   effortField = 'devEffort',
-  onToggleGap,
+  onSetGap,
   onReorderLane,
 }: {
   lanes: Lane[];
@@ -27,7 +40,7 @@ export function TimelineGrid({
   today: Date;
   editable: boolean;
   effortField?: 'devEffort' | 'testEffort' | 'totalEffort';
-  onToggleGap?: (userId: string, dateKeyStr: string) => void;
+  onSetGap?: (userId: string, dateKeyStr: string, portion: GapPortion | null) => void;
   onReorderLane?: (userId: string, orderedTaskIds: string[]) => void;
 }) {
   const todayCol = daysBetween(windowStart, today);
@@ -40,7 +53,7 @@ export function TimelineGrid({
       name: lane.name,
       tasks: lane.tasks.map((t) => ({ id: t.id, effortDays: t[effortField] })) as SchedulableTask[],
       startDate: lane.startDate,
-      gapDayKeys: lane.gapDays,
+      gapDays: lane.gapDays,
     }));
     const results = computeLaneSchedules(scheduleInputs, windowStart, windowDays);
     return lanes.map((lane, i) => ({ lane, result: results[i] }));
@@ -74,7 +87,7 @@ export function TimelineGrid({
           return (
             <div
               key={i}
-              className={`border-b border-line py-1.5 text-center font-mono text-[11.5px] ${
+              className={`border-b border-line py-1.5 text-center font-mono text-[11.5px] transition-colors ${
                 weekend ? 'bg-wknd text-[#ADB8B5]' : 'text-ink2'
               } ${isToday ? 'font-bold text-primary' : ''}`}
             >
@@ -93,7 +106,7 @@ export function TimelineGrid({
             windowStart={windowStart}
             todayCol={todayCol}
             editable={editable}
-            onToggleGap={onToggleGap}
+            onSetGap={onSetGap}
             onDragStart={(taskId) => {
               dragRef.current = { userId: lane.userId, taskId };
             }}
@@ -108,6 +121,45 @@ export function TimelineGrid({
   );
 }
 
+function GapPopover({ onSelect, onClose }: { onSelect: (portion: GapPortion | null) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [onClose]);
+
+  const options: { label: string; portion: GapPortion | null; danger?: boolean }[] = [
+    { label: 'Busy morning (AM)', portion: 'AM' },
+    { label: 'Busy afternoon (PM)', portion: 'PM' },
+    { label: 'Busy all day', portion: 'FULL' },
+    { label: 'Clear', portion: null, danger: true },
+  ];
+
+  return (
+    <div
+      ref={ref}
+      onClick={(e) => e.stopPropagation()}
+      className="absolute left-1/2 top-full z-40 mt-1.5 w-44 origin-top -translate-x-1/2 animate-[scale-in_0.12s_ease-out] overflow-hidden rounded-lg border border-line bg-white py-1 shadow-xl"
+    >
+      {options.map((opt) => (
+        <button
+          key={opt.label}
+          onClick={() => onSelect(opt.portion)}
+          className={`block w-full px-3 py-1.5 text-left text-[12.5px] hover:bg-primary-soft ${
+            opt.danger ? 'border-t border-line text-ink2 hover:bg-gray-50 hover:text-red-600' : 'text-ink'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function FragmentLane({
   lane,
   result,
@@ -115,7 +167,7 @@ function FragmentLane({
   windowStart,
   todayCol,
   editable,
-  onToggleGap,
+  onSetGap,
   onDragStart,
   onDrop,
 }: {
@@ -125,11 +177,12 @@ function FragmentLane({
   windowStart: Date;
   todayCol: number;
   editable: boolean;
-  onToggleGap?: (userId: string, dateKeyStr: string) => void;
+  onSetGap?: (userId: string, dateKeyStr: string, portion: GapPortion | null) => void;
   onDragStart: (taskId: string) => void;
   onDrop: (taskId: string) => void;
 }) {
   const taskById = new Map(lane.tasks.map((t) => [t.id, t]));
+  const [openGapKey, setOpenGapKey] = useState<string | null>(null);
 
   return (
     <>
@@ -150,28 +203,36 @@ function FragmentLane({
         const date = addDays(windowStart, i);
         const weekend = date.getDay() === 0 || date.getDay() === 6;
         const key = dateKey(date);
-        const isGap = lane.gapDays.has(key);
+        const gapPortion = weekend ? undefined : lane.gapDays.get(key);
         const cell = result.cellsByColumn.get(i);
         const task = cell ? taskById.get(cell.taskId) : undefined;
-        const clickable = editable && !weekend && onToggleGap;
+        const clickable = editable && !weekend && !!onSetGap;
+        const popoverOpen = openGapKey === key;
 
         return (
           <div
             key={i}
-            onClick={() => clickable && onToggleGap!(lane.userId, key)}
-            className={`relative h-[56px] border-b border-r border-dashed border-[#EEF2F1] ${
-              weekend
-                ? 'bg-wknd'
-                : isGap
-                ? 'bg-[repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4_6px,#EDF1F0_6px,#EDF1F0_12px)]'
-                : ''
-            } ${clickable ? 'cursor-pointer' : ''}`}
+            onClick={() => clickable && setOpenGapKey(popoverOpen ? null : key)}
+            className={`relative h-[56px] border-b border-r border-dashed border-[#EEF2F1] transition-colors ${weekend ? 'bg-wknd' : ''} ${
+              clickable ? 'cursor-pointer hover:bg-primary-soft/40' : ''
+            }`}
           >
             {i === todayCol && <span className="absolute inset-y-0 left-0 w-0.5 bg-primary opacity-65" />}
-            {isGap && !weekend && (
-              <span className="absolute inset-0 flex items-center justify-center text-[10.5px] tracking-wide text-[#7C8C89]">busy</span>
+
+            {gapPortion === 'FULL' && (
+              <span className={`absolute inset-0 flex items-center justify-center text-[10.5px] tracking-wide text-[#7C8C89] ${GAP_STRIPE}`}>
+                busy
+              </span>
             )}
-            {task && cell && !isGap && (
+            {(gapPortion === 'AM' || gapPortion === 'PM') && (
+              <span
+                className={`absolute inset-y-0 w-1/2 ${GAP_STRIPE}`}
+                style={{ left: gapPortion === 'AM' ? 0 : '50%' }}
+                title={gapPortion === 'AM' ? 'Busy morning' : 'Busy afternoon'}
+              />
+            )}
+
+            {task && cell && (
               <div
                 draggable={editable}
                 onDragStart={(e) => {
@@ -183,14 +244,25 @@ function FragmentLane({
                   e.preventDefault();
                   onDrop(task.id);
                 }}
+                onClick={(e) => e.stopPropagation()}
                 title={`${task.ticketId} · ${task.title} · ${task.devEffort} md`}
-                className={`absolute inset-1.5 flex items-center justify-center overflow-hidden rounded-md font-mono text-[11px] font-semibold text-white ${
+                className={`absolute inset-1.5 flex items-center justify-center overflow-hidden rounded-md font-mono text-[11px] font-semibold text-white transition-transform hover:scale-[1.03] ${
                   task.type === 'BE' ? 'bg-be' : 'bg-ui'
-                } ${cell.half ? 'w-[calc(50%-3px)]' : ''} ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                style={{ left: cell.half && !cell.isStart ? '50%' : undefined }}
+                } ${cell.portion !== 'full' ? 'w-[calc(50%-3px)]' : ''} ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                style={{ left: cell.portion === 'right' ? '50%' : undefined }}
               >
                 {cell.isStart ? task.ticketId : ''}
               </div>
+            )}
+
+            {popoverOpen && (
+              <GapPopover
+                onSelect={(portion) => {
+                  onSetGap!(lane.userId, key, portion);
+                  setOpenGapKey(null);
+                }}
+                onClose={() => setOpenGapKey(null)}
+              />
             )}
           </div>
         );

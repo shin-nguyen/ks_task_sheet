@@ -7,6 +7,6 @@ import java.util.List;
 
 public record TimelineConfigRequest(
         @NotNull LocalDate startDate,
-        List<LocalDate> gapDays
+        List<String> gapDays
 ) {
 }

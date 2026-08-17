@@ -12,6 +12,7 @@ import { StatusSettingsPage } from './pages/StatusSettingsPage';
 import { TeamPage } from './pages/TeamPage';
 import { EpicMembersPage } from './pages/EpicMembersPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { SettingsPage } from './pages/SettingsPage';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -25,6 +26,11 @@ function RequireAdmin({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
   if (!isAdmin) return <Navigate to="/epics" replace />;
   return <>{children}</>;
+}
+
+function SettingsIndexRedirect() {
+  const { isAdmin } = useAuth();
+  return <Navigate to={isAdmin ? '/settings/statuses' : '/settings/password'} replace />;
 }
 
 export default function App() {
@@ -46,23 +52,26 @@ export default function App() {
         <Route path="/epics/:epicId/report" element={<ReportPage />} />
         <Route path="/epics/:epicId/notes" element={<NotesPage />} />
         <Route path="/epics/:epicId/members" element={<EpicMembersPage />} />
-        <Route path="/settings/password" element={<ChangePasswordPage />} />
-        <Route
-          path="/settings/statuses"
-          element={
-            <RequireAdmin>
-              <StatusSettingsPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/settings/team"
-          element={
-            <RequireAdmin>
-              <TeamPage />
-            </RequireAdmin>
-          }
-        />
+        <Route path="/settings" element={<SettingsPage />}>
+          <Route index element={<SettingsIndexRedirect />} />
+          <Route path="password" element={<ChangePasswordPage />} />
+          <Route
+            path="statuses"
+            element={
+              <RequireAdmin>
+                <StatusSettingsPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="team"
+            element={
+              <RequireAdmin>
+                <TeamPage />
+              </RequireAdmin>
+            }
+          />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

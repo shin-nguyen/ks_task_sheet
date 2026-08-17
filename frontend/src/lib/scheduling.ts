@@ -59,9 +59,22 @@ export function nextWorkingDay(d: Date, offset = 1): Date {
   return result;
 }
 
+export type GapPortion = 'FULL' | 'AM' | 'PM';
+
+/** Decodes a stored gap-day entry ("2026-08-17" or "2026-08-17:AM"/":PM") into date + portion. */
+export function parseGapEntry(entry: string): { date: string; portion: GapPortion } {
+  const [date, suffix] = entry.split(':');
+  return { date, portion: suffix === 'AM' || suffix === 'PM' ? suffix : 'FULL' };
+}
+
+export function encodeGapEntry(date: string, portion: GapPortion): string {
+  return portion === 'FULL' ? date : `${date}:${portion}`;
+}
+
 export interface ScheduleCell {
   taskId: string;
-  half: boolean;
+  /** Which part of the day column this chunk occupies (half chunks render at half width). */
+  portion: 'full' | 'left' | 'right';
   isStart: boolean;
 }
 
@@ -81,7 +94,7 @@ export interface ScheduleLaneInput {
   name: string;
   tasks: SchedulableTask[];
   startDate: Date;
-  gapDayKeys: Set<string>;
+  gapDays: Map<string, GapPortion>;
 }
 
 export interface ScheduleLaneOutput extends LaneSchedule {
@@ -93,7 +106,7 @@ export function computeLaneSchedules(lanes: ScheduleLaneInput[], windowStart: Da
   return lanes.map((lane) => ({
     userId: lane.userId,
     name: lane.name,
-    ...scheduleLane(lane.tasks, lane.startDate, windowStart, lane.gapDayKeys, maxColumn),
+    ...scheduleLane(lane.tasks, lane.startDate, windowStart, lane.gapDays, maxColumn),
   }));
 }
 
@@ -105,7 +118,7 @@ export function scheduleLane(
   tasks: SchedulableTask[],
   laneStartDate: Date,
   windowStart: Date,
-  gapDayKeys: Set<string>,
+  gapDays: Map<string, GapPortion>,
   maxColumn: number
 ): LaneSchedule {
   const cellsByColumn = new Map<number, ScheduleCell>();
@@ -118,12 +131,28 @@ export function scheduleLane(
     let started = false;
     while (left > 0 && col < maxColumn) {
       const date = addDays(windowStart, col);
-      if (isWeekend(date) || gapDayKeys.has(dateKey(date))) {
+      if (isWeekend(date)) {
         col++;
         continue;
       }
-      const amount = Math.min(left, 1);
-      cellsByColumn.set(col, { taskId: task.id, half: amount === 0.5, isStart: !started });
+      const gapPortion = gapDays.get(dateKey(date));
+      if (gapPortion === 'FULL') {
+        col++;
+        continue;
+      }
+      const capacity = gapPortion ? 0.5 : 1;
+      const amount = Math.min(left, capacity);
+      let portion: ScheduleCell['portion'];
+      if (capacity === 1 && amount === 1) {
+        portion = 'full';
+      } else if (gapPortion === 'AM') {
+        portion = 'right'; // morning busy, afternoon free
+      } else if (gapPortion === 'PM') {
+        portion = 'left'; // afternoon busy, morning free
+      } else {
+        portion = started ? 'right' : 'left';
+      }
+      cellsByColumn.set(col, { taskId: task.id, portion, isStart: !started });
       started = true;
       left -= amount;
       finishDate = date;

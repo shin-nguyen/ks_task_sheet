@@ -15,7 +15,7 @@ export function Topbar({ title, subtitle, right }: { title: string; subtitle?: s
 export function Chip({ label, value, hero = false }: { label: string; value: string; hero?: boolean }) {
   return (
     <div
-      className={`rounded-lg border px-4 py-2 text-[14px] ${
+      className={`rounded-lg border px-4 py-2 text-[14px] transition-shadow duration-200 hover:shadow-md ${
         hero ? 'border-primary bg-primary text-[#D3EFE6]' : 'border-line bg-panel text-ink2'
       }`}
     >

@@ -30,9 +30,10 @@ public class TimelineConfig {
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
+    // Each entry is "YYYY-MM-DD" (whole day busy) or "YYYY-MM-DD:AM" / "YYYY-MM-DD:PM" (half day busy).
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "gap_days", nullable = false, columnDefinition = "jsonb")
-    private List<LocalDate> gapDays = new ArrayList<>();
+    private List<String> gapDays = new ArrayList<>();
 
     public UUID getId() {
         return id;
@@ -66,11 +67,11 @@ public class TimelineConfig {
         this.startDate = startDate;
     }
 
-    public List<LocalDate> getGapDays() {
+    public List<String> getGapDays() {
         return gapDays;
     }
 
-    public void setGapDays(List<LocalDate> gapDays) {
+    public void setGapDays(List<String> gapDays) {
         this.gapDays = gapDays;
     }
 }

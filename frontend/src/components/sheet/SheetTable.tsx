@@ -1,17 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type ColumnSizingState,
   type SortingState,
 } from '@tanstack/react-table';
 import type { Task, TaskStatus, TaskWriteInput, UserSummary } from '../../types';
 import { LinkPicker } from './LinkPicker';
 import { TextEditModal } from './TextEditModal';
+import { Tooltip } from '../ui/Tooltip';
 
 const columnHelper = createColumnHelper<Task>();
+
+// Columns pinned to the left edge while the sheet scrolls horizontally.
+const STICKY_COLUMN_IDS = ['idx', 'ticketId'];
 
 function toWriteInput(t: Task): TaskWriteInput {
   return {
@@ -27,6 +32,26 @@ function toWriteInput(t: Task): TaskWriteInput {
     testEffort: t.testEffort,
     statusId: t.status.id,
   };
+}
+
+function loadColumnSizing(epicId: string): ColumnSizingState {
+  try {
+    const raw = localStorage.getItem(`sheet-col-widths:${epicId}`);
+    return raw ? (JSON.parse(raw) as ColumnSizingState) : {};
+  } catch {
+    return {};
+  }
+}
+
+function TruncatedText({ value, placeholder }: { value: string; placeholder?: string }) {
+  if (!value) return <span className="text-[#C4CECB]">{placeholder ?? '—'}</span>;
+  // Column widths are user-resizable, so whether text actually overflows can't be
+  // known from length alone — show the tooltip for any non-empty value, same as a native title.
+  return (
+    <Tooltip label={value}>
+      <span className="block truncate">{value}</span>
+    </Tooltip>
+  );
 }
 
 function InlineText({ value, onCommit, mono, placeholder }: { value: string; onCommit: (v: string) => void; mono?: boolean; placeholder?: string }) {
@@ -61,9 +86,9 @@ function InlineText({ value, onCommit, mono, placeholder }: { value: string; onC
         setDraft(value);
         setEditing(true);
       }}
-      className="cursor-text rounded px-0.5 py-0.5 hover:bg-gray-50"
+      className="block w-full min-w-0 cursor-text rounded px-0.5 py-0.5 hover:bg-gray-50"
     >
-      {value || <span className="text-[#C4CECB]">{placeholder ?? '—'}</span>}
+      <TruncatedText value={value} placeholder={placeholder} />
     </div>
   );
 }
@@ -113,6 +138,7 @@ function InlineNumber({ value, onCommit }: { value: number; onCommit: (v: number
 }
 
 export function SheetTable({
+  epicId,
   tasks,
   allTasksInEpic,
   users,
@@ -123,6 +149,7 @@ export function SheetTable({
   onUnlink,
   filteredCount,
 }: {
+  epicId: string;
   tasks: Task[];
   allTasksInEpic: Task[];
   users: UserSummary[];
@@ -137,6 +164,24 @@ export function SheetTable({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [textEdit, setTextEdit] = useState<{ id: string; field: 'note' | 'description' } | null>(null);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => loadColumnSizing(epicId));
+  const persistTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    setColumnSizing(loadColumnSizing(epicId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epicId]);
+
+  function handleColumnSizingChange(updater: ColumnSizingState | ((old: ColumnSizingState) => ColumnSizingState)) {
+    setColumnSizing((old) => {
+      const next = typeof updater === 'function' ? updater(old) : updater;
+      clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        localStorage.setItem(`sheet-col-widths:${epicId}`, JSON.stringify(next));
+      }, 250);
+      return next;
+    });
+  }
 
   function patch(task: Task, changes: Partial<TaskWriteInput>) {
     onUpdate(task.id, { ...toWriteInput(task), ...changes });
@@ -156,18 +201,30 @@ export function SheetTable({
       columnHelper.display({
         id: 'idx',
         header: '#',
+        size: 42,
+        minSize: 36,
+        maxSize: 64,
         cell: (ctx) => <span className="text-ink2">{ctx.row.index + 1}</span>,
       }),
       columnHelper.accessor('ticketId', {
         header: 'Ticket ID',
+        size: 112,
+        minSize: 80,
+        maxSize: 220,
         cell: (ctx) => <span className="font-num text-[13.5px] font-medium">{ctx.getValue()}</span>,
       }),
       columnHelper.accessor('title', {
         header: 'Title',
+        size: 240,
+        minSize: 120,
+        maxSize: 600,
         cell: (ctx) => <InlineText value={ctx.getValue()} onCommit={(v) => patch(ctx.row.original, { title: v })} />,
       }),
       columnHelper.accessor('type', {
         header: 'Type',
+        size: 90,
+        minSize: 80,
+        maxSize: 130,
         cell: (ctx) => {
           const task = ctx.row.original;
           const locked = task.linkedTasks.length > 0;
@@ -193,6 +250,9 @@ export function SheetTable({
       columnHelper.display({
         id: 'link',
         header: 'Link',
+        size: 170,
+        minSize: 100,
+        maxSize: 320,
         cell: (ctx) => {
           const task = ctx.row.original;
           const candidates = allTasksInEpic.filter(
@@ -212,13 +272,16 @@ export function SheetTable({
       columnHelper.display({
         id: 'beAssignee',
         header: 'BE assignee',
+        size: 150,
+        minSize: 100,
+        maxSize: 260,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
             <select
               value={task.beAssignee?.id ?? ''}
               onChange={(e) => patch(task, { beAssigneeId: e.target.value || null })}
-              className="rounded border-0 bg-transparent text-[13.5px]"
+              className="w-full rounded border-0 bg-transparent text-[13.5px]"
             >
               <option value="">— unassigned —</option>
               {users.map((u) => (
@@ -233,6 +296,9 @@ export function SheetTable({
       columnHelper.display({
         id: 'uiAssignee',
         header: 'UI assignee',
+        size: 150,
+        minSize: 100,
+        maxSize: 260,
         cell: (ctx) => {
           const task = ctx.row.original;
           if (task.type === 'BE') {
@@ -242,7 +308,7 @@ export function SheetTable({
             <select
               value={task.uiAssignee?.id ?? ''}
               onChange={(e) => patch(task, { uiAssigneeId: e.target.value || null })}
-              className="rounded border-0 bg-transparent text-[13.5px]"
+              className="w-full rounded border-0 bg-transparent text-[13.5px]"
             >
               <option value="">— unassigned —</option>
               {users.map((u) => (
@@ -257,13 +323,16 @@ export function SheetTable({
       columnHelper.display({
         id: 'testAssignee',
         header: 'Test assignee',
+        size: 150,
+        minSize: 100,
+        maxSize: 260,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
             <select
               value={task.testAssignee?.id ?? ''}
               onChange={(e) => patch(task, { testAssigneeId: e.target.value || null })}
-              className="rounded border-0 bg-transparent text-[13.5px]"
+              className="w-full rounded border-0 bg-transparent text-[13.5px]"
             >
               <option value="">— unassigned —</option>
               {users.map((u) => (
@@ -277,26 +346,38 @@ export function SheetTable({
       }),
       columnHelper.accessor('devEffort', {
         header: 'Dev',
+        size: 76,
+        minSize: 60,
+        maxSize: 120,
         cell: (ctx) => <InlineNumber value={ctx.getValue()} onCommit={(v) => patch(ctx.row.original, { devEffort: v })} />,
       }),
       columnHelper.accessor('testEffort', {
         header: 'Test',
+        size: 76,
+        minSize: 60,
+        maxSize: 120,
         cell: (ctx) => <InlineNumber value={ctx.getValue()} onCommit={(v) => patch(ctx.row.original, { testEffort: v })} />,
       }),
       columnHelper.accessor('totalEffort', {
         header: 'Total',
+        size: 84,
+        minSize: 64,
+        maxSize: 120,
         cell: (ctx) => <span className="block text-right font-num font-semibold">{ctx.getValue().toFixed(1)}</span>,
       }),
       columnHelper.display({
         id: 'status',
         header: 'Status',
+        size: 150,
+        minSize: 100,
+        maxSize: 260,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
             <select
               value={task.status.id}
               onChange={(e) => patch(task, { statusId: e.target.value })}
-              className="rounded border-0 bg-transparent text-[13.5px] font-medium"
+              className="w-full rounded border-0 bg-transparent text-[13.5px] font-medium"
               style={{ color: task.status.color }}
             >
               {statuses.map((s) => (
@@ -310,37 +391,47 @@ export function SheetTable({
       }),
       columnHelper.accessor('note', {
         header: 'Note',
+        size: 200,
+        minSize: 100,
+        maxSize: 500,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
-            <span
+            <button
               onClick={() => setTextEdit({ id: task.id, field: 'note' })}
-              className="block max-w-[190px] cursor-pointer truncate text-ink2 hover:text-ink"
+              className="block w-full min-w-0 cursor-pointer text-left text-ink2 hover:text-ink"
               title="Click to edit"
             >
-              {task.note || <i className="text-[#C4CECB]">—</i>}
-            </span>
+              <TruncatedText value={task.note ?? ''} />
+            </button>
           );
         },
       }),
       columnHelper.accessor('description', {
         header: 'Description',
+        size: 200,
+        minSize: 100,
+        maxSize: 500,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
-            <span
+            <button
               onClick={() => setTextEdit({ id: task.id, field: 'description' })}
-              className="block max-w-[190px] cursor-pointer truncate text-ink2 hover:text-ink"
+              className="block w-full min-w-0 cursor-pointer text-left text-ink2 hover:text-ink"
               title="Click to edit"
             >
-              {task.description || <i className="text-[#C4CECB]">—</i>}
-            </span>
+              <TruncatedText value={task.description ?? ''} />
+            </button>
           );
         },
       }),
       columnHelper.display({
         id: 'menu',
         header: '',
+        size: 44,
+        minSize: 44,
+        maxSize: 44,
+        enableResizing: false,
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
@@ -352,7 +443,7 @@ export function SheetTable({
                 ⋯
               </button>
               {openMenuId === task.id && (
-                <div className="absolute right-0 top-full z-30 mt-1 w-32 rounded-md border border-line bg-white shadow-lg">
+                <div className="absolute right-0 top-full z-30 mt-1 w-32 origin-top-right animate-[scale-in_0.12s_ease-out] rounded-md border border-line bg-white shadow-lg">
                   <button
                     onClick={() => {
                       setOpenMenuId(null);
@@ -376,11 +467,34 @@ export function SheetTable({
   const table = useReactTable({
     data: tasks,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: handleColumnSizingChange,
+    columnResizeMode: 'onChange',
+    enableColumnResizing: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const leafColumns = table.getVisibleLeafColumns();
+  const stickyLeft = useMemo(() => {
+    const offsets: Record<string, number> = {};
+    let acc = 0;
+    for (const col of leafColumns) {
+      if (STICKY_COLUMN_IDS.includes(col.id)) offsets[col.id] = acc;
+      acc += col.getSize();
+    }
+    return offsets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leafColumns, columnSizing]);
+
+  function stickyCellProps(columnId: string) {
+    if (!STICKY_COLUMN_IDS.includes(columnId)) return {};
+    return {
+      className: 'sticky z-20 shadow-[2px_0_4px_rgba(15,27,25,0.06)]',
+      style: { left: stickyLeft[columnId] },
+    };
+  }
 
   const sums = tasks.reduce(
     (acc, t) => ({ dev: acc.dev + t.devEffort, test: acc.test + t.testEffort, total: acc.total + t.totalEffort }),
@@ -391,18 +505,37 @@ export function SheetTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1300px] border-collapse text-[14px]">
+      <table className="border-collapse text-[14px]" style={{ width: table.getTotalSize(), tableLayout: 'fixed' }}>
+        <colgroup>
+          {leafColumns.map((col) => (
+            <col key={col.id} style={{ width: col.getSize() }} />
+          ))}
+        </colgroup>
         <thead>
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  onClick={header.column.getToggleSortingHandler()}
-                  className="cursor-pointer whitespace-nowrap border-b border-line bg-[#F7FAF9] px-2.5 py-2.5 text-left text-[12.5px] uppercase tracking-wide text-ink2 hover:text-primary"
+                  className={`group/th relative whitespace-nowrap border-b border-line bg-[#F7FAF9] px-2.5 py-2.5 text-left text-[12.5px] uppercase tracking-wide text-ink2 ${
+                    STICKY_COLUMN_IDS.includes(header.column.id) ? 'sticky z-20 shadow-[2px_0_4px_rgba(15,27,25,0.06)]' : ''
+                  }`}
+                  style={STICKY_COLUMN_IDS.includes(header.column.id) ? { left: stickyLeft[header.column.id] } : undefined}
                 >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {{ asc: ' ↑', desc: ' ↓' }[header.column.getIsSorted() as string] ?? ''}
+                  <span onClick={header.column.getToggleSortingHandler()} className="cursor-pointer hover:text-primary">
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{ asc: ' ↑', desc: ' ↓' }[header.column.getIsSorted() as string] ?? ''}
+                  </span>
+                  {header.column.getCanResize() && (
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize touch-none select-none opacity-0 group-hover/th:opacity-100 ${
+                        header.column.getIsResizing() ? 'bg-primary opacity-100' : 'bg-line'
+                      }`}
+                    />
+                  )}
                 </th>
               ))}
             </tr>
@@ -410,17 +543,26 @@ export function SheetTable({
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} id={`task-row-${row.original.id}`} className="border-b border-[#EDF1F0] transition-colors hover:bg-[#F7FBFA]">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="whitespace-nowrap px-2.5 py-2 align-middle">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
+            <tr key={row.id} id={`task-row-${row.original.id}`} className="group border-b border-[#EDF1F0] transition-colors hover:bg-[#F7FBFA]">
+              {row.getVisibleCells().map((cell) => {
+                const sticky = stickyCellProps(cell.column.id);
+                return (
+                  <td
+                    key={cell.id}
+                    {...sticky}
+                    className={`px-2.5 py-2 align-middle ${sticky.className ?? ''} ${
+                      STICKY_COLUMN_IDS.includes(cell.column.id) ? 'bg-white transition-colors group-hover:bg-[#F7FBFA]' : ''
+                    }`}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                );
+              })}
             </tr>
           ))}
           {tasks.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-10 text-center text-ink2">
+              <td colSpan={leafColumns.length} className="px-3 py-10 text-center text-ink2">
                 No tasks match the current filters.
               </td>
             </tr>
@@ -428,7 +570,7 @@ export function SheetTable({
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={7} className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 font-semibold">
+            <td colSpan={8} className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 font-semibold">
               Total ({filteredCount} task{filteredCount === 1 ? '' : 's'} shown)
             </td>
             <td className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 text-right font-num font-semibold">{sums.dev.toFixed(1)}</td>
@@ -440,8 +582,8 @@ export function SheetTable({
       </table>
 
       {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDeleteId(null)}>
-          <div className="w-80 rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-[fade-in_0.12s_ease-out]" onClick={() => setConfirmDeleteId(null)}>
+          <div className="w-80 origin-center animate-[scale-in_0.15s_ease-out] rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <p className="mb-4 text-sm text-ink">Delete this task? This also removes its BE↔UI link, if any.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setConfirmDeleteId(null)} className="rounded-md border border-line px-3.5 py-2 text-[14px]">

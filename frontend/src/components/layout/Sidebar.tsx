@@ -15,7 +15,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const { epicId } = useParams();
   const { data: epics } = useEpics();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [pickerOpen, setPickerOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ export function Sidebar() {
       <div className="relative my-2.5 mb-4" ref={ref}>
         <button
           onClick={() => setPickerOpen((o) => !o)}
-          className="w-full rounded-lg border border-[#2A3E3A] bg-[#1B2B28] px-3 py-2.5 text-left"
+          className="w-full rounded-lg border border-[#2A3E3A] bg-[#1B2B28] px-3 py-2.5 text-left transition-colors hover:border-[#3A5049]"
         >
           {currentEpic ? (
             <>
@@ -51,7 +51,7 @@ export function Sidebar() {
           )}
         </button>
         {pickerOpen && (
-          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-auto rounded-lg border border-[#2A3E3A] bg-[#152420] shadow-xl">
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 origin-top animate-[scale-in_0.14s_ease-out] overflow-auto rounded-lg border border-[#2A3E3A] bg-[#152420] shadow-xl">
             {epics?.map((e) => (
               <button
                 key={e.id}
@@ -59,7 +59,7 @@ export function Sidebar() {
                   setPickerOpen(false);
                   navigate(`/epics/${e.id}/sheet`);
                 }}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-[#C8D4D0] hover:bg-[#1B2B28]"
+                className="block w-full px-3 py-2.5 text-left text-[14px] text-[#C8D4D0] transition-colors hover:bg-[#1B2B28]"
               >
                 <span className="font-mono text-[#3ED8AE]">{e.ticketId}</span> · {e.name}
               </button>
@@ -69,7 +69,7 @@ export function Sidebar() {
                 setPickerOpen(false);
                 navigate('/epics');
               }}
-              className="block w-full border-t border-[#2A3E3A] px-3 py-2.5 text-left text-[14px] text-[#9FB1AC] hover:bg-[#1B2B28]"
+              className="block w-full border-t border-[#2A3E3A] px-3 py-2.5 text-left text-[14px] text-[#9FB1AC] transition-colors hover:bg-[#1B2B28]"
             >
               All epics…
             </button>
@@ -82,7 +82,7 @@ export function Sidebar() {
           key={item.key}
           to={epicId ? `/epics/${epicId}/${item.key}` : '/epics'}
           className={({ isActive }) =>
-            `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] ${
+            `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] transition-colors duration-150 ${
               isActive ? 'bg-sidebar-active font-semibold text-white' : 'text-[#9FB1AC] hover:bg-sidebar-hover hover:text-white'
             }`
           }
@@ -91,33 +91,6 @@ export function Sidebar() {
           {item.label}
         </NavLink>
       ))}
-
-      {isAdmin && (
-        <>
-          <NavLink
-            to="/settings/statuses"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] ${
-                isActive ? 'bg-sidebar-active font-semibold text-white' : 'text-[#9FB1AC] hover:bg-sidebar-hover hover:text-white'
-              }`
-            }
-          >
-            <span className="w-[17px] text-center">⚙</span>
-            Statuses
-          </NavLink>
-          <NavLink
-            to="/settings/team"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] ${
-                isActive ? 'bg-sidebar-active font-semibold text-white' : 'text-[#9FB1AC] hover:bg-sidebar-hover hover:text-white'
-              }`
-            }
-          >
-            <span className="w-[17px] text-center">🛡</span>
-            Team
-          </NavLink>
-        </>
-      )}
 
       <div className="mt-auto border-t border-[#223531] pt-3 text-[13.5px] text-[#5F736E]">
         {user && (
@@ -128,10 +101,7 @@ export function Sidebar() {
             </span>
           </div>
         )}
-        <button onClick={() => navigate('/settings/password')} className="mt-1.5 block text-left hover:text-white">
-          Change password
-        </button>
-        <button onClick={() => logout()} className="mt-1.5 text-left hover:text-white">
+        <button onClick={() => logout()} className="mt-1.5 text-left transition-colors hover:text-white">
           Log out
         </button>
       </div>

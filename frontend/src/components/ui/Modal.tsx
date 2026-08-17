@@ -18,13 +18,13 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1412]/45"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1412]/45 animate-[fade-in_0.15s_ease-out]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="max-h-[88vh] w-[94vw] overflow-auto rounded-2xl bg-white shadow-2xl"
+        className="max-h-[88vh] w-[94vw] origin-center animate-[scale-in_0.18s_ease-out] overflow-auto rounded-2xl bg-white shadow-2xl"
         style={{ maxWidth: width }}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-4">

@@ -178,6 +178,7 @@ export function SheetPage() {
 
         {!isLoading && tasks && tasks.length > 0 && users && statuses && (
           <SheetTable
+            epicId={epicId}
             tasks={filtered}
             allTasksInEpic={tasks}
             users={users}

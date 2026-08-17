@@ -10,12 +10,14 @@ import {
   computeLaneSchedules,
   dateKey,
   defaultStartDateFor,
+  encodeGapEntry,
   formatLong,
   nextWorkingDay,
   parseDateKey,
+  parseGapEntry,
   startOfDay,
 } from '../lib/scheduling';
-import type { SchedulableTask } from '../lib/scheduling';
+import type { GapPortion, SchedulableTask } from '../lib/scheduling';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 
@@ -40,7 +42,10 @@ export function TimelinePage() {
       if (!assignee) continue;
       const config = configs?.find((c) => c.userId === assignee.id);
       const startDate = config ? parseDateKey(config.startDate) : defaultStartDateFor(today);
-      const gapDays = new Set(config?.gapDays ?? []);
+      const gapDays = new Map<string, GapPortion>((config?.gapDays ?? []).map((entry) => {
+        const { date, portion } = parseGapEntry(entry);
+        return [date, portion];
+      }));
       if (!byUser.has(assignee.id)) {
         byUser.set(assignee.id, { userId: assignee.id, name: assignee.name, tasks: [], startDate, gapDays });
       }
@@ -60,7 +65,7 @@ export function TimelinePage() {
   const windowDays = useMemo(() => {
     if (lanes.length === 0) return 14;
     const probe = computeLaneSchedules(
-      lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDayKeys: l.gapDays })),
+      lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDays: l.gapDays })),
       windowStart,
       180
     );
@@ -74,7 +79,7 @@ export function TimelinePage() {
   const scheduleSummary = useMemo(
     () =>
       computeLaneSchedules(
-        lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDayKeys: l.gapDays })),
+        lanes.map((l) => ({ userId: l.userId, name: l.name, tasks: l.tasks.map((t) => ({ id: t.id, effortDays: t.devEffort })) as SchedulableTask[], startDate: l.startDate, gapDays: l.gapDays })),
         windowStart,
         windowDays
       ),
@@ -88,14 +93,15 @@ export function TimelinePage() {
   }, null);
   const demoReadyDate = codeCompleteDate ? nextWorkingDay(codeCompleteDate, 1) : null;
 
-  async function toggleGap(userId: string, key: string) {
+  async function setGap(userId: string, key: string, portion: GapPortion | null) {
     const lane = lanes.find((l) => l.userId === userId);
     if (!lane) return;
-    const next = new Set(lane.gapDays);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
+    const next = new Map(lane.gapDays);
+    if (portion === null) next.delete(key);
+    else next.set(key, portion);
+    const encoded = Array.from(next.entries()).map(([date, p]) => encodeGapEntry(date, p));
     try {
-      await upsertConfig.mutateAsync({ userId, startDate: dateKey(lane.startDate), gapDays: Array.from(next) });
+      await upsertConfig.mutateAsync({ userId, startDate: dateKey(lane.startDate), gapDays: encoded });
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not update gap day', 'error');
     }
@@ -104,7 +110,8 @@ export function TimelinePage() {
   async function changeStartDate(userId: string, newDate: string) {
     const lane = lanes.find((l) => l.userId === userId);
     try {
-      await upsertConfig.mutateAsync({ userId, startDate: newDate, gapDays: lane ? Array.from(lane.gapDays) : [] });
+      const encoded = lane ? Array.from(lane.gapDays.entries()).map(([date, p]) => encodeGapEntry(date, p)) : [];
+      await upsertConfig.mutateAsync({ userId, startDate: newDate, gapDays: encoded });
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not update start date', 'error');
     } finally {
@@ -154,7 +161,7 @@ export function TimelinePage() {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded bg-[repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4_4px,#EDF1F0_4px,#EDF1F0_8px)]" />
-            Gap (busy on another epic) — click a cell to toggle
+            Gap (busy on another epic) — click a cell to set AM / PM / full day
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded bg-wknd" /> Weekend (skipped)
@@ -196,7 +203,7 @@ export function TimelinePage() {
                 windowDays={windowDays}
                 today={today}
                 editable
-                onToggleGap={toggleGap}
+                onSetGap={setGap}
                 onReorderLane={reorderLane}
               />
             </div>

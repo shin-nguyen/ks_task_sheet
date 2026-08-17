@@ -42,11 +42,11 @@ export function LinkPicker({
         </span>
       ))}
       <div className="relative" ref={ref}>
-        <button onClick={() => setOpen((o) => !o)} className="text-[12px] text-[#C4CECB] hover:text-primary">
+        <button onClick={() => setOpen((o) => !o)} className="text-[12px] text-[#C4CECB] transition-colors hover:text-primary">
           ＋ link
         </button>
         {open && (
-          <div className="absolute left-0 top-full z-30 mt-1 max-h-56 w-48 overflow-auto rounded-md border border-line bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-30 mt-1 max-h-56 w-48 origin-top-left animate-[scale-in_0.12s_ease-out] overflow-auto rounded-md border border-line bg-white shadow-lg">
             {candidates.length === 0 && <div className="px-3 py-2 text-[12px] text-ink2">No {task.type === 'BE' ? 'UI' : 'BE'} tasks available</div>}
             {candidates.map((c) => (
               <button
