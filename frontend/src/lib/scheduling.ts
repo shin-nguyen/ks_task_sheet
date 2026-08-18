@@ -150,7 +150,7 @@ export function scheduleLane(
       } else if (gapPortion === 'PM') {
         portion = 'left'; // afternoon busy, morning free
       } else {
-        portion = started ? 'right' : 'left';
+        portion = 'left';
       }
       cellsByColumn.set(col, { taskId: task.id, portion, isStart: !started });
       started = true;

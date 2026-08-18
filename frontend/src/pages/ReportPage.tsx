@@ -5,6 +5,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useTimelineConfigs } from '../hooks/useTimeline';
 import { Topbar, Chip } from '../components/layout/Topbar';
 import { Select } from '../components/ui/Select';
+import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { TimelineGrid, type Lane } from '../components/timeline/TimelineGrid';
 import { Avatar } from '../components/ui/Avatar';
 import { computeLaneSchedules, defaultStartDateFor, formatLong, parseDateKey, parseGapEntry, startOfDay } from '../lib/scheduling';
@@ -139,14 +140,13 @@ export function ReportPage() {
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <Select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
-          <option value="ALL">Assignee: All</option>
-          {assignees.map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </Select>
+        <SearchableSelect
+          value={assigneeFilter}
+          onChange={setAssigneeFilter}
+          options={assignees.map(([id, name]) => ({ id, label: name }))}
+          emptyOption={{ id: 'ALL', label: 'Assignee: All' }}
+          className="w-52"
+        />
         <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="ALL">Type: All</option>
           <option value="BE">BE</option>

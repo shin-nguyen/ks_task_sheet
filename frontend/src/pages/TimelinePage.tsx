@@ -20,6 +20,7 @@ import {
 import type { GapPortion, SchedulableTask } from '../lib/scheduling';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
+import { Input } from '../components/ui/Input';
 
 export function TimelinePage() {
   const { epicId } = useParams<{ epicId: string }>();
@@ -31,7 +32,7 @@ export function TimelinePage() {
   const reorderTasks = useReorderTasks(epicId!);
   const toast = useToast();
   const today = useMemo(() => startOfDay(new Date()), []);
-  const [editingStartFor, setEditingStartFor] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const lanes: Lane[] = useMemo(() => {
     if (!tasks || !users) return [];
@@ -93,6 +94,11 @@ export function TimelinePage() {
   }, null);
   const demoReadyDate = codeCompleteDate ? nextWorkingDay(codeCompleteDate, 1) : null;
 
+  const visibleLanes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? lanes.filter((l) => l.name.toLowerCase().includes(q)) : lanes;
+  }, [lanes, search]);
+
   async function setGap(userId: string, key: string, portion: GapPortion | null) {
     const lane = lanes.find((l) => l.userId === userId);
     if (!lane) return;
@@ -114,8 +120,6 @@ export function TimelinePage() {
       await upsertConfig.mutateAsync({ userId, startDate: newDate, gapDays: encoded });
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not update start date', 'error');
-    } finally {
-      setEditingStartFor(null);
     }
   }
 
@@ -167,7 +171,7 @@ export function TimelinePage() {
             <span className="h-3.5 w-3.5 rounded bg-wknd" /> Weekend (skipped)
           </span>
           <span className="flex-1" />
-          <span>Click a lane's start date to edit · drag blocks to reorder within a lane</span>
+          <span>Click a lane's start date to edit · drag the first block onto a day to move it · drag blocks to reorder within a lane</span>
         </div>
 
         {lanes.length === 0 && (
@@ -176,35 +180,27 @@ export function TimelinePage() {
 
         {lanes.length > 0 && (
           <>
-            <div className="flex flex-wrap gap-3 border-b border-line px-4 py-3 text-[14px]">
-              {lanes.map((lane) => (
-                <div key={lane.userId} className="flex items-center gap-1.5">
-                  <b>{lane.name}:</b>
-                  {editingStartFor === lane.userId ? (
-                    <input
-                      type="date"
-                      autoFocus
-                      defaultValue={dateKey(lane.startDate)}
-                      onBlur={(e) => e.target.value && changeStartDate(lane.userId, e.target.value)}
-                      className="rounded border border-line px-1.5 py-0.5 font-mono text-[12px]"
-                    />
-                  ) : (
-                    <button onClick={() => setEditingStartFor(lane.userId)} className="font-mono text-primary hover:underline">
-                      {formatLong(lane.startDate)} ✎
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            {lanes.length > 6 && (
+              <div className="border-b border-line px-4 py-2.5">
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Filter ${lanes.length} people by name…`}
+                  className="w-64"
+                />
+              </div>
+            )}
+            {visibleLanes.length === 0 && <div className="px-4 py-3 text-[14px] text-ink2">No match for "{search}"</div>}
             <div className="p-2">
               <TimelineGrid
-                lanes={lanes}
+                lanes={visibleLanes}
                 windowStart={windowStart}
                 windowDays={windowDays}
                 today={today}
                 editable
                 onSetGap={setGap}
                 onReorderLane={reorderLane}
+                onChangeStartDate={changeStartDate}
               />
             </div>
           </>

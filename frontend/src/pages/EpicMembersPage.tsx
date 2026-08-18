@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { Topbar } from '../components/layout/Topbar';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
+import { SearchableSelect } from '../components/ui/SearchableSelect';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -80,14 +80,13 @@ export function EpicMembersPage() {
 
         {isAdmin && (
           <div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
-            <Select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)} className="w-64">
-              <option value="">Select a person to add…</option>
-              {candidates.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.email})
-                </option>
-              ))}
-            </Select>
+            <SearchableSelect
+              value={selectedUserId}
+              onChange={setSelectedUserId}
+              options={candidates.map((u) => ({ id: u.id, label: `${u.name} (${u.email})` }))}
+              placeholder="Select a person to add…"
+              className="w-64"
+            />
             <Button variant="primary" onClick={handleAdd} disabled={!selectedUserId || addMember.isPending}>
               + Add member
             </Button>

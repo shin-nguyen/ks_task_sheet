@@ -33,6 +33,7 @@ export function TimelineGrid({
   effortField = 'devEffort',
   onSetGap,
   onReorderLane,
+  onChangeStartDate,
 }: {
   lanes: Lane[];
   windowStart: Date;
@@ -42,6 +43,7 @@ export function TimelineGrid({
   effortField?: 'devEffort' | 'testEffort' | 'totalEffort';
   onSetGap?: (userId: string, dateKeyStr: string, portion: GapPortion | null) => void;
   onReorderLane?: (userId: string, orderedTaskIds: string[]) => void;
+  onChangeStartDate?: (userId: string, newDateKey: string) => void;
 }) {
   const todayCol = daysBetween(windowStart, today);
   const dragRef = useRef<{ userId: string; taskId: string } | null>(null);
@@ -73,13 +75,23 @@ export function TimelineGrid({
     onReorderLane(targetLane.userId, ids);
   }
 
+  function handleDropOnDay(targetLane: Lane, dateKeyStr: string) {
+    const dragged = dragRef.current;
+    dragRef.current = null;
+    if (!dragged || dragged.userId !== targetLane.userId || !onChangeStartDate) return;
+    // Dragging onto empty grid space only makes sense for the lane's first task —
+    // it's the only task whose position actually maps to the lane's start date.
+    if (dragged.taskId !== targetLane.tasks[0]?.id) return;
+    onChangeStartDate(targetLane.userId, dateKeyStr);
+  }
+
   return (
     <div className="overflow-x-auto pb-2">
       <div
         className="grid"
         style={{ gridTemplateColumns: `172px repeat(${windowDays}, minmax(58px, 1fr))`, minWidth: 172 + windowDays * 58 }}
       >
-        <div className="border-r border-line" />
+        <div className="sticky top-0 left-0 z-30 border-b border-r border-line bg-panel" />
         {Array.from({ length: windowDays }).map((_, i) => {
           const date = addDays(windowStart, i);
           const weekend = date.getDay() === 0 || date.getDay() === 6;
@@ -87,8 +99,8 @@ export function TimelineGrid({
           return (
             <div
               key={i}
-              className={`border-b border-line py-1.5 text-center font-mono text-[11.5px] transition-colors ${
-                weekend ? 'bg-wknd text-[#ADB8B5]' : 'text-ink2'
+              className={`sticky top-0 z-20 border-b border-line py-1.5 text-center font-mono text-[11.5px] transition-colors ${
+                weekend ? 'bg-wknd text-[#ADB8B5]' : 'bg-panel text-ink2'
               } ${isToday ? 'font-bold text-primary' : ''}`}
             >
               <span className="block text-[10.5px] tracking-wide">{dow(date)}</span>
@@ -107,11 +119,16 @@ export function TimelineGrid({
             todayCol={todayCol}
             editable={editable}
             onSetGap={onSetGap}
+            onChangeStartDate={onChangeStartDate}
             onDragStart={(taskId) => {
               dragRef.current = { userId: lane.userId, taskId };
             }}
             onDrop={(taskId) => {
               handleDrop(lane, taskId);
+              forceRender((n) => n + 1);
+            }}
+            onDropOnDay={(dateKeyStr) => {
+              handleDropOnDay(lane, dateKeyStr);
               forceRender((n) => n + 1);
             }}
           />
@@ -168,8 +185,10 @@ function FragmentLane({
   todayCol,
   editable,
   onSetGap,
+  onChangeStartDate,
   onDragStart,
   onDrop,
+  onDropOnDay,
 }: {
   lane: Lane;
   result: LaneSchedule;
@@ -178,19 +197,45 @@ function FragmentLane({
   todayCol: number;
   editable: boolean;
   onSetGap?: (userId: string, dateKeyStr: string, portion: GapPortion | null) => void;
+  onChangeStartDate?: (userId: string, newDateKey: string) => void;
   onDragStart: (taskId: string) => void;
   onDrop: (taskId: string) => void;
+  onDropOnDay?: (dateKeyStr: string) => void;
 }) {
   const taskById = new Map(lane.tasks.map((t) => [t.id, t]));
   const [openGapKey, setOpenGapKey] = useState<string | null>(null);
+  const [editingStart, setEditingStart] = useState(false);
 
   return (
     <>
-      <div className="flex flex-col justify-center gap-0.5 border-b border-r border-line px-3.5 py-2.5">
+      <div className="sticky left-0 z-10 flex flex-col justify-center gap-0.5 border-b border-r border-line bg-panel px-3.5 py-2.5">
         <b className="flex items-center gap-1.5 text-[14.5px]">
           <Avatar name={lane.name} />
           {lane.name}
         </b>
+        {onChangeStartDate && editable ? (
+          editingStart ? (
+            <input
+              type="date"
+              autoFocus
+              defaultValue={dateKey(lane.startDate)}
+              onBlur={(e) => {
+                if (e.target.value) onChangeStartDate(lane.userId, e.target.value);
+                setEditingStart(false);
+              }}
+              className="w-fit rounded border border-line px-1 py-0.5 font-mono text-[11px]"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingStart(true)}
+              className="w-fit font-mono text-[11.5px] text-primary hover:underline"
+            >
+              starts {formatShort(lane.startDate)} ✎
+            </button>
+          )
+        ) : (
+          <small className="font-mono text-[11.5px] text-ink2">starts {formatShort(lane.startDate)}</small>
+        )}
         <small className="text-[12.5px] text-ink2">{result.remainingEffort.toFixed(1)} md remaining</small>
         {result.finishDate ? (
           <span className="font-mono text-[12px] font-semibold text-primary">✓ done {formatLong(result.finishDate)}</span>
@@ -207,12 +252,19 @@ function FragmentLane({
         const cell = result.cellsByColumn.get(i);
         const task = cell ? taskById.get(cell.taskId) : undefined;
         const clickable = editable && !weekend && !!onSetGap;
+        const dropTarget = editable && !weekend && !!onDropOnDay;
         const popoverOpen = openGapKey === key;
 
         return (
           <div
             key={i}
             onClick={() => clickable && setOpenGapKey(popoverOpen ? null : key)}
+            onDragOver={(e) => dropTarget && e.preventDefault()}
+            onDrop={(e) => {
+              if (!dropTarget) return;
+              e.preventDefault();
+              onDropOnDay!(key);
+            }}
             className={`relative h-[56px] border-b border-r border-dashed border-[#EEF2F1] transition-colors ${weekend ? 'bg-wknd' : ''} ${
               clickable ? 'cursor-pointer hover:bg-primary-soft/40' : ''
             }`}
@@ -242,9 +294,9 @@ function FragmentLane({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onDrop(task.id);
                 }}
-                onClick={(e) => e.stopPropagation()}
                 title={`${task.ticketId} · ${task.title} · ${task.devEffort} md`}
                 className={`absolute inset-1.5 flex items-center justify-center overflow-hidden rounded-md font-mono text-[11px] font-semibold text-white transition-transform hover:scale-[1.03] ${
                   task.type === 'BE' ? 'bg-be' : 'bg-ui'

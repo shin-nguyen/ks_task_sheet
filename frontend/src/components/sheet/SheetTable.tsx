@@ -12,6 +12,7 @@ import type { Task, TaskStatus, TaskWriteInput, UserSummary } from '../../types'
 import { LinkPicker } from './LinkPicker';
 import { TextEditModal } from './TextEditModal';
 import { Tooltip } from '../ui/Tooltip';
+import { SearchableSelect } from '../ui/SearchableSelect';
 
 const columnHelper = createColumnHelper<Task>();
 
@@ -187,6 +188,8 @@ export function SheetTable({
     onUpdate(task.id, { ...toWriteInput(task), ...changes });
   }
 
+  const userOptions = useMemo(() => users.map((u) => ({ id: u.id, label: u.name })), [users]);
+
   function scrollTo(taskId: string) {
     const el = document.getElementById(`task-row-${taskId}`);
     if (el) {
@@ -278,18 +281,14 @@ export function SheetTable({
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
-            <select
+            <SearchableSelect
+              variant="ghost"
               value={task.beAssignee?.id ?? ''}
-              onChange={(e) => patch(task, { beAssigneeId: e.target.value || null })}
-              className="w-full rounded border-0 bg-transparent text-[13.5px]"
-            >
-              <option value="">— unassigned —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(id) => patch(task, { beAssigneeId: id || null })}
+              options={userOptions}
+              emptyOption={{ id: '', label: '— unassigned —' }}
+              placeholder="— unassigned —"
+            />
           );
         },
       }),
@@ -305,18 +304,14 @@ export function SheetTable({
             return <span className="text-[13px] text-ink2">—</span>;
           }
           return (
-            <select
+            <SearchableSelect
+              variant="ghost"
               value={task.uiAssignee?.id ?? ''}
-              onChange={(e) => patch(task, { uiAssigneeId: e.target.value || null })}
-              className="w-full rounded border-0 bg-transparent text-[13.5px]"
-            >
-              <option value="">— unassigned —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(id) => patch(task, { uiAssigneeId: id || null })}
+              options={userOptions}
+              emptyOption={{ id: '', label: '— unassigned —' }}
+              placeholder="— unassigned —"
+            />
           );
         },
       }),
@@ -329,18 +324,14 @@ export function SheetTable({
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
-            <select
+            <SearchableSelect
+              variant="ghost"
               value={task.testAssignee?.id ?? ''}
-              onChange={(e) => patch(task, { testAssigneeId: e.target.value || null })}
-              className="w-full rounded border-0 bg-transparent text-[13.5px]"
-            >
-              <option value="">— unassigned —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(id) => patch(task, { testAssigneeId: id || null })}
+              options={userOptions}
+              emptyOption={{ id: '', label: '— unassigned —' }}
+              placeholder="— unassigned —"
+            />
           );
         },
       }),
