@@ -17,7 +17,7 @@ export function SettingsPage() {
             to={tab.to}
             className={({ isActive }) =>
               `relative -mb-px border-b-2 px-4 py-2.5 text-[14.5px] font-medium transition-colors ${
-                isActive ? 'border-primary text-primary' : 'border-transparent text-ink2 hover:text-ink'
+                isActive ? 'border-primary text-primary' : 'border-transparent text-ink2 hover:border-line hover:text-ink'
               }`
             }
           >

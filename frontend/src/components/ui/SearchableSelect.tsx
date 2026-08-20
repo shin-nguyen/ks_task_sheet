@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Icon } from './Icon';
 
 export interface SearchableSelectOption {
   id: string;
@@ -57,8 +58,8 @@ export function SearchableSelect({
 
   const triggerClass =
     variant === 'ghost'
-      ? 'w-full truncate rounded border-0 bg-transparent px-0 py-0.5 text-left text-[13.5px]'
-      : 'flex w-full items-center justify-between gap-2 rounded-md border border-line bg-white px-3 py-2 text-left text-[14.5px] focus:outline-none focus:ring-2 focus:ring-primary/40';
+      ? 'group/trigger flex w-full items-center justify-between gap-1 truncate rounded-sm border border-transparent bg-transparent px-1 py-0.5 text-left text-[13.5px] hover:border-line hover:bg-panel2'
+      : 'flex w-full items-center justify-between gap-2 rounded-sm border border-line bg-white px-3 py-2 text-left text-[14.5px] transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25';
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
@@ -68,11 +69,16 @@ export function SearchableSelect({
         onClick={() => setOpen((o) => !o)}
         className={`${triggerClass} disabled:cursor-not-allowed disabled:opacity-60`}
       >
-        <span className={`truncate ${selected ? '' : 'text-ink2'}`}>{selected ? selected.label : placeholder}</span>
+        <span className={`truncate ${selected ? '' : 'text-ink3'}`}>{selected ? selected.label : placeholder}</span>
+        <Icon
+          name="chevron-down"
+          size={13}
+          className={`shrink-0 text-ink3 ${variant === 'ghost' ? 'opacity-0 transition-opacity group-hover/trigger:opacity-100' : ''}`}
+        />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-white shadow-xl">
+        <div className="absolute left-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-md border border-line bg-white shadow-raised">
           <input
             ref={inputRef}
             value={query}

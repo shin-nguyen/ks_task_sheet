@@ -57,7 +57,7 @@ export function TeamPage() {
 
       {isLoading && <p className="text-[14.5px] text-ink2">Loading…</p>}
 
-      <div className="rounded-[10px] border border-line bg-panel">
+      <div className="rounded-lg border border-line bg-panel shadow-card">
         {users?.map((u) => (
           <TeamRow key={u.id} member={u} />
         ))}

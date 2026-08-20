@@ -13,6 +13,7 @@ import { LinkPicker } from './LinkPicker';
 import { TextEditModal } from './TextEditModal';
 import { Tooltip } from '../ui/Tooltip';
 import { SearchableSelect } from '../ui/SearchableSelect';
+import { Icon } from '../ui/Icon';
 
 const columnHelper = createColumnHelper<Task>();
 
@@ -45,7 +46,7 @@ function loadColumnSizing(epicId: string): ColumnSizingState {
 }
 
 function TruncatedText({ value, placeholder }: { value: string; placeholder?: string }) {
-  if (!value) return <span className="text-[#C4CECB]">{placeholder ?? '—'}</span>;
+  if (!value) return <span className="text-ink3">{placeholder ?? '—'}</span>;
   // Column widths are user-resizable, so whether text actually overflows can't be
   // known from length alone — show the tooltip for any non-empty value, same as a native title.
   return (
@@ -63,7 +64,7 @@ function InlineText({ value, onCommit, mono, placeholder }: { value: string; onC
     return (
       <input
         autoFocus
-        className={`w-full rounded border-2 border-primary bg-white px-1.5 py-1 text-[14px] outline-none ${mono ? 'font-num' : ''}`}
+        className={`w-full rounded-sm border-2 border-primary bg-white px-1.5 py-1 text-[14px] outline-none ${mono ? 'font-num' : ''}`}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -87,7 +88,7 @@ function InlineText({ value, onCommit, mono, placeholder }: { value: string; onC
         setDraft(value);
         setEditing(true);
       }}
-      className="block w-full min-w-0 cursor-text rounded px-0.5 py-0.5 hover:bg-gray-50"
+      className="block w-full min-w-0 cursor-text rounded-sm px-0.5 py-0.5 hover:bg-panel2"
     >
       <TruncatedText value={value} placeholder={placeholder} />
     </div>
@@ -105,7 +106,7 @@ function InlineNumber({ value, onCommit }: { value: number; onCommit: (v: number
         type="number"
         step={0.5}
         min={0}
-        className="w-16 rounded border-2 border-primary bg-white px-1.5 py-1 text-right font-num text-[14px] outline-none"
+        className="w-16 rounded-sm border-2 border-primary bg-white px-1.5 py-1 text-right font-num text-[14px] outline-none"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -131,7 +132,7 @@ function InlineNumber({ value, onCommit }: { value: number; onCommit: (v: number
         setDraft(String(value));
         setEditing(true);
       }}
-      className="cursor-text rounded px-0.5 py-0.5 text-right font-num hover:bg-gray-50"
+      className="cursor-text rounded-sm px-0.5 py-0.5 text-right font-num hover:bg-panel2"
     >
       {value.toFixed(1)}
     </div>
@@ -240,7 +241,7 @@ export function SheetTable({
                 const type = e.target.value as 'BE' | 'UI';
                 patch(task, { type, ...(type === 'BE' ? { uiAssigneeId: null } : {}) });
               }}
-              className={`rounded px-1.5 py-0.5 text-[12.5px] font-semibold disabled:opacity-60 ${
+              className={`rounded-full px-2 py-0.5 text-[12.5px] font-semibold tracking-wide disabled:opacity-60 ${
                 task.type === 'BE' ? 'bg-be-soft text-be' : 'bg-ui-soft text-ui'
               }`}
             >
@@ -365,18 +366,24 @@ export function SheetTable({
         cell: (ctx) => {
           const task = ctx.row.original;
           return (
-            <select
-              value={task.status.id}
-              onChange={(e) => patch(task, { statusId: e.target.value })}
-              className="w-full rounded border-0 bg-transparent text-[13.5px] font-medium"
-              style={{ color: task.status.color }}
+            <div
+              className="inline-flex w-full items-center gap-1.5 rounded-full py-1 pl-2.5 pr-1.5 text-[13px] font-medium"
+              style={{ background: `${task.status.color}17`, color: task.status.color }}
             >
-              {statuses.map((s) => (
-                <option key={s.id} value={s.id} style={{ color: '#17252A' }}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: task.status.color }} />
+              <select
+                value={task.status.id}
+                onChange={(e) => patch(task, { statusId: e.target.value })}
+                className="w-full truncate border-0 bg-transparent pr-1 text-[13px] font-medium outline-none"
+                style={{ color: task.status.color, appearance: 'none' }}
+              >
+                {statuses.map((s) => (
+                  <option key={s.id} value={s.id} style={{ color: '#181A26' }}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           );
         },
       }),
@@ -399,7 +406,7 @@ export function SheetTable({
         },
       }),
       columnHelper.accessor('description', {
-        header: 'Description',
+        header: 'Question',
         size: 200,
         minSize: 100,
         maxSize: 500,
@@ -429,19 +436,20 @@ export function SheetTable({
             <div className="relative text-right">
               <button
                 onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
-                className="px-1 text-ink2 hover:text-ink"
+                className="rounded-sm p-1 text-ink3 hover:bg-panel2 hover:text-ink"
               >
-                ⋯
+                <Icon name="dots-vertical" size={15} />
               </button>
               {openMenuId === task.id && (
-                <div className="absolute right-0 top-full z-30 mt-1 w-32 origin-top-right animate-[scale-in_0.12s_ease-out] rounded-md border border-line bg-white shadow-lg">
+                <div className="absolute right-0 top-full z-30 mt-1 w-36 origin-top-right animate-[scale-in_0.12s_ease-out] overflow-hidden rounded-md border border-line bg-white shadow-raised">
                   <button
                     onClick={() => {
                       setOpenMenuId(null);
                       setConfirmDeleteId(task.id);
                     }}
-                    className="block w-full px-3 py-2 text-left text-[13.5px] text-red-600 hover:bg-red-50"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13.5px] text-danger hover:bg-danger-soft"
                   >
+                    <Icon name="trash" size={14} />
                     Delete task
                   </button>
                 </div>
@@ -482,7 +490,7 @@ export function SheetTable({
   function stickyCellProps(columnId: string) {
     if (!STICKY_COLUMN_IDS.includes(columnId)) return {};
     return {
-      className: 'sticky z-20 shadow-[2px_0_4px_rgba(15,27,25,0.06)]',
+      className: 'sticky z-20 shadow-[2px_0_4px_rgba(17,19,33,0.06)]',
       style: { left: stickyLeft[columnId] },
     };
   }
@@ -508,8 +516,8 @@ export function SheetTable({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className={`group/th relative whitespace-nowrap border-b border-line bg-[#F7FAF9] px-2.5 py-2.5 text-left text-[12.5px] uppercase tracking-wide text-ink2 ${
-                    STICKY_COLUMN_IDS.includes(header.column.id) ? 'sticky z-20 shadow-[2px_0_4px_rgba(15,27,25,0.06)]' : ''
+                  className={`group/th relative whitespace-nowrap border-b border-line bg-panel2 px-2.5 py-2.5 text-left text-[11.5px] font-semibold uppercase tracking-wider text-ink2 ${
+                    STICKY_COLUMN_IDS.includes(header.column.id) ? 'sticky z-20 shadow-[2px_0_4px_rgba(17,19,33,0.06)]' : ''
                   }`}
                   style={STICKY_COLUMN_IDS.includes(header.column.id) ? { left: stickyLeft[header.column.id] } : undefined}
                 >
@@ -534,7 +542,7 @@ export function SheetTable({
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} id={`task-row-${row.original.id}`} className="group border-b border-[#EDF1F0] transition-colors hover:bg-[#F7FBFA]">
+            <tr key={row.id} id={`task-row-${row.original.id}`} className="group border-b border-line2 transition-colors hover:bg-panel2">
               {row.getVisibleCells().map((cell) => {
                 const sticky = stickyCellProps(cell.column.id);
                 return (
@@ -542,7 +550,7 @@ export function SheetTable({
                     key={cell.id}
                     {...sticky}
                     className={`px-2.5 py-2 align-middle ${sticky.className ?? ''} ${
-                      STICKY_COLUMN_IDS.includes(cell.column.id) ? 'bg-white transition-colors group-hover:bg-[#F7FBFA]' : ''
+                      STICKY_COLUMN_IDS.includes(cell.column.id) ? 'bg-white transition-colors group-hover:bg-panel2' : ''
                     }`}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -561,23 +569,26 @@ export function SheetTable({
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={8} className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 font-semibold">
+            <td colSpan={8} className="border-t-2 border-line bg-panel2 px-2.5 py-2 font-semibold">
               Total ({filteredCount} task{filteredCount === 1 ? '' : 's'} shown)
             </td>
-            <td className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 text-right font-num font-semibold">{sums.dev.toFixed(1)}</td>
-            <td className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 text-right font-num font-semibold">{sums.test.toFixed(1)}</td>
-            <td className="border-t-2 border-line bg-[#F7FAF9] px-2.5 py-2 text-right font-num font-semibold">{sums.total.toFixed(1)}</td>
-            <td colSpan={4} className="border-t-2 border-line bg-[#F7FAF9]" />
+            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.dev.toFixed(1)}</td>
+            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.test.toFixed(1)}</td>
+            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.total.toFixed(1)}</td>
+            <td colSpan={4} className="border-t-2 border-line bg-panel2" />
           </tr>
         </tfoot>
       </table>
 
       {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-[fade-in_0.12s_ease-out]" onClick={() => setConfirmDeleteId(null)}>
-          <div className="w-80 origin-center animate-[scale-in_0.15s_ease-out] rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0E0F1A]/50 backdrop-blur-[2px] animate-[fade-in_0.12s_ease-out]"
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div className="w-80 origin-center animate-[scale-in_0.15s_ease-out] rounded-lg bg-white p-5 shadow-modal" onClick={(e) => e.stopPropagation()}>
             <p className="mb-4 text-sm text-ink">Delete this task? This also removes its BE↔UI link, if any.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmDeleteId(null)} className="rounded-md border border-line px-3.5 py-2 text-[14px]">
+              <button onClick={() => setConfirmDeleteId(null)} className="rounded-sm border border-line px-3.5 py-2 text-[14px] hover:bg-panel2">
                 Cancel
               </button>
               <button
@@ -585,7 +596,7 @@ export function SheetTable({
                   onDelete(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="rounded-md bg-red-600 px-3.5 py-2 text-[14px] font-semibold text-white"
+                className="rounded-sm bg-danger px-3.5 py-2 text-[14px] font-semibold text-white hover:bg-[#D33C41]"
               >
                 Delete
               </button>
@@ -598,7 +609,7 @@ export function SheetTable({
         <TextEditModal
           key={`${textEdit.id}-${textEdit.field}`}
           open
-          title={textEdit.field === 'note' ? 'Edit note' : 'Edit description'}
+          title={textEdit.field === 'note' ? 'Edit note' : 'Edit question'}
           initialValue={(textEdit.field === 'note' ? editingTask.note : editingTask.description) ?? ''}
           onClose={() => setTextEdit(null)}
           onSave={(value) => patch(editingTask, { [textEdit.field]: value } as Partial<TaskWriteInput>)}

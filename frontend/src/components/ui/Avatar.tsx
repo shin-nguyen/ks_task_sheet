@@ -1,4 +1,4 @@
-const PALETTE = ['#2563EB', '#0E7C66', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#65A30D', '#DC2626'];
+const PALETTE = ['#3B4CE0', '#F0672F', '#1E9E63', '#B0389C', '#0891B2', '#C2861A', '#7B6EF0', '#DC2626'];
 
 export function colorForName(name: string) {
   let hash = 0;
@@ -24,7 +24,7 @@ export function Avatar({ name, size = 20 }: { name: string; size?: number }) {
 }
 
 export function Who({ name }: { name: string | null | undefined }) {
-  if (!name) return <span className="text-[#B7C2BF]">— unassigned</span>;
+  if (!name) return <span className="text-ink3">— unassigned</span>;
   return (
     <span className="inline-flex items-center gap-1.5">
       <Avatar name={name} />

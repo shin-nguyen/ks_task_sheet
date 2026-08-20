@@ -3,6 +3,7 @@ import { Topbar } from '../components/layout/Topbar';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { Icon } from '../components/ui/Icon';
 import {
   useCreateStatus,
   useDeleteStatus,
@@ -45,24 +46,25 @@ function StatusRow({ status, index, total, onMove }: { status: TaskStatus; index
   }
 
   return (
-    <div className="flex items-center gap-3 border-b border-[#EDF1F0] px-4 py-3">
+    <div className="flex items-center gap-3 border-b border-line2 px-4 py-3 transition-colors hover:bg-panel2/60">
       <div className="flex flex-col gap-0.5">
-        <button disabled={index === 0} onClick={() => onMove(index, index - 1)} className="text-ink2 hover:text-primary disabled:opacity-30">
-          ▲
+        <button disabled={index === 0} onClick={() => onMove(index, index - 1)} className="rounded-sm text-ink3 hover:bg-panel2 hover:text-primary disabled:opacity-30">
+          <Icon name="chevron-up" size={15} />
         </button>
-        <button disabled={index === total - 1} onClick={() => onMove(index, index + 1)} className="text-ink2 hover:text-primary disabled:opacity-30">
-          ▼
+        <button disabled={index === total - 1} onClick={() => onMove(index, index + 1)} className="rounded-sm text-ink3 hover:bg-panel2 hover:text-primary disabled:opacity-30">
+          <Icon name="chevron-down" size={15} />
         </button>
       </div>
-      <input type="color" value={color} onChange={(e) => save({ color: e.target.value })} className="h-8 w-8 cursor-pointer rounded border border-line" />
+      <input type="color" value={color} onChange={(e) => save({ color: e.target.value })} className="h-8 w-8 cursor-pointer rounded-sm border border-line" />
       <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => save({ name })} className="w-56" />
-      <Select value={category} onChange={(e) => save({ category: e.target.value as 'ACTIVE' | 'DONE' })} className="w-44">
+      <Select value={category} onChange={(e) => save({ category: e.target.value as 'ACTIVE' | 'DONE' })} className="w-48">
         <option value="ACTIVE">Active (counts in timeline)</option>
         <option value="DONE">Done (excluded from timeline)</option>
       </Select>
-      {status.system && <span className="rounded bg-primary-soft px-2 py-0.5 text-[13px] font-semibold text-primary">default</span>}
+      {status.system && <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-[12.5px] font-semibold text-primary">default</span>}
       <span className="flex-1" />
-      <button onClick={remove} className="text-[14px] text-ink2 hover:text-red-600">
+      <button onClick={remove} className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[13.5px] text-ink2 hover:bg-danger-soft hover:text-danger">
+        <Icon name="trash" size={13} />
         Delete
       </button>
     </div>
@@ -105,20 +107,21 @@ export function StatusSettingsPage() {
         the timeline &amp; workload calculations — everything else counts as active work.
       </p>
 
-      <div className="rounded-[10px] border border-line bg-panel">
+      <div className="rounded-lg border border-line bg-panel shadow-card">
         {statuses?.map((s, i) => (
           <StatusRow key={s.id} status={s} index={i} total={statuses.length} onMove={move} />
         ))}
 
         <div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
-          <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="h-8 w-8 cursor-pointer rounded border border-line" />
+          <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="h-8 w-8 cursor-pointer rounded-sm border border-line" />
           <Input placeholder="New status name…" value={newName} onChange={(e) => setNewName(e.target.value)} className="w-56" />
           <Select value={newCategory} onChange={(e) => setNewCategory(e.target.value as 'ACTIVE' | 'DONE')} className="w-44">
             <option value="ACTIVE">Active</option>
             <option value="DONE">Done</option>
           </Select>
-          <Button variant="primary" onClick={addStatus} disabled={!newName.trim() || createStatus.isPending}>
-            + Add status
+          <Button variant="primary" onClick={addStatus} disabled={!newName.trim() || createStatus.isPending} className="inline-flex items-center gap-1.5">
+            <Icon name="plus" size={14} />
+            Add status
           </Button>
         </div>
       </div>

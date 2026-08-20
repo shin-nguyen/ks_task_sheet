@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Topbar } from '../components/layout/Topbar';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
+import { Icon } from '../components/ui/Icon';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -33,24 +34,26 @@ export function NotesPage() {
 
       <div className="max-w-[760px]">
         {notes?.map((note) => (
-          <div key={note.id} className="mb-3 rounded-[10px] border border-line bg-panel p-4">
+          <div key={note.id} className="mb-3 rounded-lg border border-line bg-panel p-4 shadow-card">
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2 text-[13.5px] text-ink2">
                 <Avatar name={note.author.name} />
                 <b className="text-ink">{note.author.name}</b> · {formatDate(note.createdAt)}
               </div>
               {user?.id === note.author.id && editingId !== note.id && (
-                <div className="flex gap-2 text-[13.5px] text-ink2">
+                <div className="flex gap-1 text-[13.5px] text-ink2">
                   <button
                     onClick={() => {
                       setEditingId(note.id);
                       setEditDraft(note.content);
                     }}
-                    className="hover:text-primary"
+                    className="flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-primary-soft hover:text-primary"
                   >
+                    <Icon name="pencil" size={12} />
                     Edit
                   </button>
-                  <button onClick={() => deleteNote.mutate(note.id)} className="hover:text-red-600">
+                  <button onClick={() => deleteNote.mutate(note.id)} className="flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-danger-soft hover:text-danger">
+                    <Icon name="trash" size={12} />
                     Delete
                   </button>
                 </div>
@@ -60,7 +63,7 @@ export function NotesPage() {
               <div>
                 <textarea
                   autoFocus
-                  className="h-28 w-full resize-none rounded-md border border-line p-2.5 text-[15px]"
+                  className="h-28 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
                   value={editDraft}
                   onChange={(e) => setEditDraft(e.target.value)}
                 />
@@ -86,11 +89,11 @@ export function NotesPage() {
         {notes && notes.length === 0 && !adding && <p className="mb-4 text-[14.5px] text-ink2">No notes yet.</p>}
 
         {adding ? (
-          <div className="rounded-[10px] border border-line bg-panel p-4">
+          <div className="rounded-lg border border-line bg-panel p-4 shadow-card">
             <textarea
               autoFocus
               placeholder="Write a note (markdown supported)…"
-              className="h-28 w-full resize-none rounded-md border border-line p-2.5 text-[15px]"
+              className="h-28 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
             />
@@ -119,9 +122,10 @@ export function NotesPage() {
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="w-full rounded-[10px] border-[1.5px] border-dashed border-line bg-transparent p-4 text-[14.5px] text-ink2 hover:border-primary hover:text-primary"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-dashed border-line bg-transparent p-4 text-[14.5px] text-ink2 transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary"
           >
-            ＋ Add note (markdown supported)
+            <Icon name="plus" size={14} />
+            Add note (markdown supported)
           </button>
         )}
       </div>

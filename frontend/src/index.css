@@ -16,12 +16,24 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.rail-text {
+  background: linear-gradient(90deg, #3b4ce0, #7b6ef0 55%, #f0672f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 ::-webkit-scrollbar {
   height: 10px;
   width: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d7dfdc;
+  background: #d6d5e6;
   border-radius: 6px;
 }
 ::-webkit-scrollbar-track {

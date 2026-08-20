@@ -42,7 +42,7 @@ export function TextEditModal({
     >
       <textarea
         autoFocus
-        className="h-40 w-full resize-none rounded-md border border-line p-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className="h-40 w-full resize-none rounded-sm border border-line p-2.5 text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {

@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
+import { Icon } from '../ui/Icon';
 import { api, ApiError } from '../../lib/api';
 import type { ImportResult } from '../../types';
 import { useToast } from '../../context/ToastContext';
@@ -11,7 +12,7 @@ const TARGET_FIELDS = [
   { value: 'IGNORE', label: '— Ignore —' },
   { value: 'TICKET_ID', label: 'Ticket ID' },
   { value: 'TITLE', label: 'Title' },
-  { value: 'DESCRIPTION', label: 'Description' },
+  { value: 'DESCRIPTION', label: 'Question' },
   { value: 'TYPE', label: 'Type (BE / UI)' },
   { value: 'ASSIGNEE', label: 'BE / UI Assignee (by type)' },
   { value: 'DEV_EFFORT', label: 'Dev Effort' },
@@ -144,9 +145,10 @@ export function ImportCsvModal({ epicId, open, onClose, onImported }: { epicId: 
           onDrop={onDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="mb-4 cursor-pointer rounded-lg border border-dashed border-[#B9C7C3] bg-[#FBFDFC] p-6 text-center text-[13px] text-ink2"
+          className="mb-4 cursor-pointer rounded-lg border border-dashed border-line bg-panel2 p-6 text-center text-[13px] text-ink2 transition-colors hover:border-primary/50"
         >
-          Drag & drop your Jira export here, or <b className="text-primary">browse…</b>
+          <Icon name="upload" size={18} className="mx-auto mb-2 text-ink3" />
+          Drag &amp; drop your Jira export here, or <b className="text-primary">browse…</b>
           <input
             ref={fileInputRef}
             type="file"
@@ -159,8 +161,8 @@ export function ImportCsvModal({ epicId, open, onClose, onImported }: { epicId: 
 
       {file && !result && (
         <>
-          <div className="mb-4 rounded-lg border border-dashed border-[#B9C7C3] bg-[#FBFDFC] p-4 text-center text-[13px] text-ink2">
-            <span className="inline-block rounded-md bg-primary-soft px-2.5 py-1 font-mono text-[12px] text-primary">
+          <div className="mb-4 rounded-lg border border-dashed border-line bg-panel2 p-4 text-center text-[13px] text-ink2">
+            <span className="inline-block rounded-full bg-primary-soft px-2.5 py-1 font-mono text-[12px] text-primary">
               {file.name} · {totalRows} row{totalRows === 1 ? '' : 's'} detected
             </span>
             <button className="ml-3 text-[12px] text-ink2 underline" onClick={() => setFile(null)}>
@@ -172,7 +174,7 @@ export function ImportCsvModal({ epicId, open, onClose, onImported }: { epicId: 
           <div className="max-h-64 overflow-auto rounded-md border border-line">
             <table className="w-full text-[12.5px]">
               <thead>
-                <tr className="bg-[#F7FAF9] text-left text-[11px] uppercase tracking-wide text-ink2">
+                <tr className="bg-panel2 text-left text-[11px] uppercase tracking-wide text-ink2">
                   <th className="px-2.5 py-1.5">CSV column</th>
                   <th className="px-2.5 py-1.5">Sample value</th>
                   <th className="px-2.5 py-1.5">Maps to</th>
@@ -180,14 +182,13 @@ export function ImportCsvModal({ epicId, open, onClose, onImported }: { epicId: 
               </thead>
               <tbody>
                 {headers.map((h) => (
-                  <tr key={h} className="border-t border-[#EDF1F0]">
+                  <tr key={h} className="border-t border-line2">
                     <td className="whitespace-nowrap px-2.5 py-1.5 font-mono">{h}</td>
                     <td className="max-w-[220px] truncate px-2.5 py-1.5 text-ink2">{rows[0]?.[h] ?? ''}</td>
                     <td className="whitespace-nowrap px-2.5 py-1.5">
                       <Select
                         value={mapping[h] ?? 'IGNORE'}
                         onChange={(e) => setMapping((m) => ({ ...m, [h]: e.target.value }))}
-                        className="py-1"
                       >
                         {TARGET_FIELDS.map((f) => (
                           <option key={f.value} value={f.value}>
@@ -219,27 +220,28 @@ export function ImportCsvModal({ epicId, open, onClose, onImported }: { epicId: 
               </Select>
             </label>
           </div>
-          {mappedTicketCount === 0 && <p className="mt-3 text-[12.5px] text-red-600">Map at least one column to "Ticket ID" to continue.</p>}
+          {mappedTicketCount === 0 && <p className="mt-3 text-[12.5px] text-danger">Map at least one column to "Ticket ID" to continue.</p>}
           <p className="mt-3 text-[12px] text-ink2">
-            Unmatched assignees are left unassigned · multiline descriptions and UTF-8 BOM are handled · invalid effort → 0 (warned).
+            Unmatched assignees are left unassigned · multiline questions and UTF-8 BOM are handled · invalid effort → 0 (warned).
           </p>
         </>
       )}
 
       {result && (
         <div>
-          <div className="mb-3 rounded-lg bg-primary-soft px-4 py-3 text-[13px] text-primary">
-            ✅ {result.created} created · {result.updated} updated · {result.skipped} skipped (duplicate ticket ID) · {result.errors.length} errors
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-primary-soft px-4 py-3 text-[13px] text-primary">
+            <Icon name="check" size={15} />
+            {result.created} created · {result.updated} updated · {result.skipped} skipped (duplicate ticket ID) · {result.errors.length} errors
           </div>
           {(result.errors.length > 0 || result.warnings.length > 0) && (
             <div className="max-h-56 overflow-auto rounded-md border border-line text-[12.5px]">
               {result.errors.map((e, i) => (
-                <div key={`e${i}`} className="border-b border-[#EDF1F0] px-3 py-1.5 text-red-700">
+                <div key={`e${i}`} className="border-b border-line2 px-3 py-1.5 text-danger">
                   Row {e.row}: {e.reason}
                 </div>
               ))}
               {result.warnings.map((w, i) => (
-                <div key={`w${i}`} className="border-b border-[#EDF1F0] px-3 py-1.5 text-amber-700">
+                <div key={`w${i}`} className="border-b border-line2 px-3 py-1.5 text-warn">
                   Row {w.row}: {w.reason}
                 </div>
               ))}

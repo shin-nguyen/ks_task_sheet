@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateEpic, useDeleteEpic, useEpics } from '../hooks/useEpics';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Icon } from '../components/ui/Icon';
 import { Topbar } from '../components/layout/Topbar';
 import { isApiError, useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -46,7 +47,7 @@ export function EpicsListPage() {
     <div>
       <Topbar title="Epics" subtitle="all feature epics" />
 
-      <div className="card mb-5 rounded-[10px] border border-line bg-panel p-4">
+      <div className="mb-5 rounded-lg border border-line bg-panel p-4 shadow-card">
         {formOpen ? (
           <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
             <label className="text-xs font-semibold uppercase tracking-wide text-ink2">
@@ -65,8 +66,9 @@ export function EpicsListPage() {
             </Button>
           </form>
         ) : (
-          <Button variant="primary" onClick={() => setFormOpen(true)}>
-            + New epic
+          <Button variant="primary" onClick={() => setFormOpen(true)} className="inline-flex items-center gap-1.5">
+            <Icon name="plus" size={15} />
+            New epic
           </Button>
         )}
       </div>
@@ -74,12 +76,12 @@ export function EpicsListPage() {
       {isLoading && <p className="text-sm text-ink2">Loading…</p>}
 
       {epics && epics.length === 0 && (
-        <div className="rounded-[10px] border border-dashed border-line bg-panel p-10 text-center text-ink2">
+        <div className="rounded-lg border border-dashed border-line bg-panel p-10 text-center text-ink2">
           No epics yet — create your first epic to start tracking tasks.
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {epics?.map((epic) => (
           <div
             key={epic.id}
@@ -87,22 +89,26 @@ export function EpicsListPage() {
             tabIndex={0}
             onClick={() => navigate(`/epics/${epic.id}/sheet`)}
             onKeyDown={(e) => e.key === 'Enter' && navigate(`/epics/${epic.id}/sheet`)}
-            className="relative cursor-pointer rounded-[10px] border border-line bg-panel p-4 text-left shadow-sm transition hover:border-primary hover:shadow-md"
+            className="group relative cursor-pointer overflow-hidden rounded-lg border border-line bg-panel text-left shadow-card transition hover:-translate-y-0.5 hover:shadow-raised"
           >
-            {isAdmin && (
-              <button
-                onClick={(e) => onDelete(e, epic.id, epic.name)}
-                title="Delete epic"
-                className="absolute right-3 top-3 rounded-md px-1.5 py-1 text-[13px] text-ink2 hover:bg-red-50 hover:text-red-600"
-              >
-                ✕
-              </button>
-            )}
-            <div className="font-mono text-[13px] font-medium text-primary">{epic.ticketId}</div>
-            <div className="mt-1 pr-6 font-display text-[16.5px] font-semibold text-ink">{epic.name}</div>
-            <div className="mt-2 text-[14px] text-ink2">
-              {epic.taskCount} task{epic.taskCount === 1 ? '' : 's'}
-              {epic.createdByName && <> · created by {epic.createdByName}</>}
+            <div className="h-[4px] bg-rail opacity-70 transition-opacity group-hover:opacity-100" />
+            <div className="p-4">
+              {isAdmin && (
+                <button
+                  onClick={(e) => onDelete(e, epic.id, epic.name)}
+                  title="Delete epic"
+                  className="absolute right-3 top-4 rounded-sm p-1.5 text-ink3 opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger group-hover:opacity-100"
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              )}
+              <div className="font-mono text-[13px] font-medium text-primary">{epic.ticketId}</div>
+              <div className="mt-1 pr-6 font-display text-[17px] font-semibold text-ink">{epic.name}</div>
+              <div className="mt-2.5 flex items-center gap-1.5 text-[13.5px] text-ink2">
+                <Icon name="sheet" size={13} className="text-ink3" />
+                {epic.taskCount} task{epic.taskCount === 1 ? '' : 's'}
+                {epic.createdByName && <> · created by {epic.createdByName}</>}
+              </div>
             </div>
           </div>
         ))}

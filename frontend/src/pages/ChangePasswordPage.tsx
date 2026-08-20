@@ -40,7 +40,7 @@ export function ChangePasswordPage() {
   return (
     <div>
       <Topbar title="Change password" />
-      <div className="max-w-sm rounded-[10px] border border-line bg-panel p-6">
+      <div className="max-w-sm rounded-lg border border-line bg-panel p-6 shadow-card">
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
           <label className="text-xs font-semibold uppercase tracking-wide text-ink2">
             Current password
@@ -77,7 +77,7 @@ export function ChangePasswordPage() {
               required
             />
           </label>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p className="rounded-sm bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
           <Button variant="primary" type="submit" disabled={submitting} className="mt-2 w-full">
             {submitting ? 'Saving…' : 'Save password'}
           </Button>

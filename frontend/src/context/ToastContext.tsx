@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { Icon } from '../components/ui/Icon';
 
 interface ToastItem {
   id: number;
@@ -11,6 +12,12 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+
+const VARIANT_STYLE = {
+  error: { bg: 'bg-danger', icon: 'warning' as const },
+  success: { bg: 'bg-done', icon: 'check' as const },
+  info: { bg: 'bg-ink', icon: 'check' as const },
+};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -28,16 +35,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ show }}>
       {children}
       <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`rounded-lg px-4 py-3 text-sm shadow-lg text-white ${
-              t.variant === 'error' ? 'bg-red-800' : t.variant === 'success' ? 'bg-[#10241F]' : 'bg-[#10241F]'
-            }`}
-          >
-            {t.message}
-          </div>
-        ))}
+        {toasts.map((t) => {
+          const style = VARIANT_STYLE[t.variant];
+          return (
+            <div
+              key={t.id}
+              className={`flex items-center gap-2 rounded-md px-4 py-3 text-sm text-white shadow-raised animate-[slide-down_0.18s_ease-out] ${style.bg}`}
+            >
+              <Icon name={style.icon} size={15} className="shrink-0" />
+              {t.message}
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );

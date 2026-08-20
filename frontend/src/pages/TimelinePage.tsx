@@ -155,20 +155,20 @@ export function TimelinePage() {
         }
       />
 
-      <div className="rounded-[10px] border border-line bg-panel">
+      <div className="rounded-lg border border-line bg-panel shadow-card">
         <div className="flex flex-wrap items-center gap-4 border-b border-line px-4 py-3.5 text-[14px] text-ink2">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded bg-be" /> BE task
+            <span className="h-3.5 w-3.5 rounded-sm bg-be" /> BE task
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded bg-ui" /> UI task
+            <span className="h-3.5 w-3.5 rounded-sm bg-ui" /> UI task
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded bg-[repeating-linear-gradient(135deg,#DFE5E4,#DFE5E4_4px,#EDF1F0_4px,#EDF1F0_8px)]" />
+            <span className="h-3.5 w-3.5 rounded-sm border border-dashed border-line2 bg-gap/15" />
             Gap (busy on another epic) — click a cell to set AM / PM / full day
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded bg-wknd" /> Weekend (skipped)
+            <span className="h-3.5 w-3.5 rounded-sm bg-wknd" /> Weekend (skipped)
           </span>
           <span className="flex-1" />
           <span>Click a lane's start date to edit · drag the first block onto a day to move it · drag blocks to reorder within a lane</span>

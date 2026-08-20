@@ -11,6 +11,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { SheetTable } from '../components/sheet/SheetTable';
 import { ImportCsvModal } from '../components/sheet/ImportCsvModal';
+import { Icon } from '../components/ui/Icon';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { TaskType } from '../types';
@@ -131,9 +132,17 @@ export function SheetPage() {
     <div>
       <Topbar title="Sheet" subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined} />
 
-      <div className="rounded-[10px] border border-line bg-panel">
+      <div className="rounded-lg border border-line bg-panel shadow-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
-          <Input placeholder="🔍  Search ticket / title…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-52" />
+          <div className="relative">
+            <Icon name="search" size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3" />
+            <Input
+              placeholder="Search ticket / title…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-52 pl-8"
+            />
+          </div>
           <Select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
             <option value="ALL">Assignee: All</option>
             {assignees.map(([id, name]) => (
@@ -155,11 +164,15 @@ export function SheetPage() {
               </option>
             ))}
           </Select>
-          <span className="text-xs text-ink2">Click a header to sort</span>
+          <span className="text-xs text-ink3">Click a header to sort</span>
           <span className="flex-1" />
-          <Button onClick={() => setImportOpen(true)}>⬆ Import CSV</Button>
-          <Button variant="primary" onClick={() => setAdding(true)}>
-            + Task
+          <Button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-1.5">
+            <Icon name="upload" size={14} />
+            Import CSV
+          </Button>
+          <Button variant="primary" onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5">
+            <Icon name="plus" size={14} />
+            Task
           </Button>
         </div>
 
@@ -208,8 +221,12 @@ export function SheetPage() {
               </Button>
             </form>
           ) : (
-            <button onClick={() => setAdding(true)} className="w-full rounded-md p-2 text-left italic text-ink2 hover:bg-primary-soft hover:text-primary">
-              ＋ New task — type directly, Google-Sheets style…
+            <button
+              onClick={() => setAdding(true)}
+              className="flex w-full items-center gap-2 rounded-sm border border-dashed border-line p-2.5 text-left text-ink2 transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary"
+            >
+              <Icon name="plus" size={14} />
+              New task — type directly, Google-Sheets style…
             </button>
           )}
         </div>

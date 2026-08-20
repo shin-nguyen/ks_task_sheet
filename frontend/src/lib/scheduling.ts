@@ -79,7 +79,8 @@ export interface ScheduleCell {
 }
 
 export interface LaneSchedule {
-  cellsByColumn: Map<number, ScheduleCell>;
+  /** Each column holds one full-day cell, or up to two half-day cells (one 'left', one 'right'). */
+  cellsByColumn: Map<number, ScheduleCell[]>;
   finishDate: Date | null;
   remainingEffort: number;
 }
@@ -121,42 +122,66 @@ export function scheduleLane(
   gapDays: Map<string, GapPortion>,
   maxColumn: number
 ): LaneSchedule {
-  const cellsByColumn = new Map<number, ScheduleCell>();
+  const cellsByColumn = new Map<number, ScheduleCell[]>();
   let col = Math.max(0, daysBetween(windowStart, laneStartDate));
   let finishDate: Date | null = null;
   const remainingEffort = tasks.reduce((s, t) => s + t.effortDays, 0);
+
+  // Capacity still open in the column currently being filled (0 = column not opened yet,
+  // or fully consumed). Carries across tasks so a half-day gap frees its other half for
+  // whichever task needs it next, instead of always jumping to the next calendar day.
+  let openCapacity = 0;
+  let openSide: 'left' | 'right' = 'left';
+
+  function addCell(cell: ScheduleCell) {
+    const list = cellsByColumn.get(col);
+    if (list) list.push(cell);
+    else cellsByColumn.set(col, [cell]);
+  }
 
   for (const task of tasks) {
     let left = task.effortDays;
     let started = false;
     while (left > 0 && col < maxColumn) {
+      if (openCapacity === 0) {
+        const date = addDays(windowStart, col);
+        if (isWeekend(date)) {
+          col++;
+          continue;
+        }
+        const gapPortion = gapDays.get(dateKey(date));
+        if (gapPortion === 'FULL') {
+          col++;
+          continue;
+        }
+        if (gapPortion === 'AM') {
+          openCapacity = 0.5;
+          openSide = 'right'; // morning busy, afternoon free
+        } else if (gapPortion === 'PM') {
+          openCapacity = 0.5;
+          openSide = 'left'; // afternoon busy, morning free
+        } else {
+          openCapacity = 1;
+          openSide = 'left';
+        }
+      }
+
       const date = addDays(windowStart, col);
-      if (isWeekend(date)) {
-        col++;
-        continue;
-      }
-      const gapPortion = gapDays.get(dateKey(date));
-      if (gapPortion === 'FULL') {
-        col++;
-        continue;
-      }
-      const capacity = gapPortion ? 0.5 : 1;
-      const amount = Math.min(left, capacity);
-      let portion: ScheduleCell['portion'];
-      if (capacity === 1 && amount === 1) {
-        portion = 'full';
-      } else if (gapPortion === 'AM') {
-        portion = 'right'; // morning busy, afternoon free
-      } else if (gapPortion === 'PM') {
-        portion = 'left'; // afternoon busy, morning free
-      } else {
-        portion = 'left';
-      }
-      cellsByColumn.set(col, { taskId: task.id, portion, isStart: !started });
+      const amount = Math.min(left, openCapacity);
+      const portion: ScheduleCell['portion'] = openCapacity === 1 && amount === 1 ? 'full' : openSide;
+      addCell({ taskId: task.id, portion, isStart: !started });
       started = true;
       left -= amount;
       finishDate = date;
-      col++;
+      openCapacity -= amount;
+
+      if (openCapacity <= 0) {
+        openCapacity = 0;
+        col++;
+      } else {
+        // Only half of a free day was used — the other half opens up for the next allocation.
+        openSide = 'right';
+      }
     }
   }
 

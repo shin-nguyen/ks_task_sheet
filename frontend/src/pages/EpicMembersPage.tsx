@@ -9,6 +9,7 @@ import { Topbar } from '../components/layout/Topbar';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
+import { Icon } from '../components/ui/Icon';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -58,7 +59,7 @@ export function EpicMembersPage() {
         Only people added here can see and work on this epic. Admins always have access to every epic.
       </p>
 
-      <div className="max-w-[560px] rounded-[10px] border border-line bg-panel">
+      <div className="max-w-[560px] rounded-lg border border-line bg-panel shadow-card">
         {members?.map((m) => (
           <div key={m.userId} className="flex items-center gap-3.5 border-b border-line px-4 py-3.5 last:border-b-0">
             <Avatar name={m.name} size={30} />
@@ -69,7 +70,7 @@ export function EpicMembersPage() {
               </div>
             </div>
             {isAdmin && (
-              <button onClick={() => handleRemove(m.userId, m.name)} className="text-[13.5px] text-ink2 hover:text-red-600">
+              <button onClick={() => handleRemove(m.userId, m.name)} className="rounded-sm px-2 py-1 text-[13.5px] text-ink2 hover:bg-danger-soft hover:text-danger">
                 Remove
               </button>
             )}
@@ -87,8 +88,9 @@ export function EpicMembersPage() {
               placeholder="Select a person to add…"
               className="w-64"
             />
-            <Button variant="primary" onClick={handleAdd} disabled={!selectedUserId || addMember.isPending}>
-              + Add member
+            <Button variant="primary" onClick={handleAdd} disabled={!selectedUserId || addMember.isPending} className="inline-flex items-center gap-1.5">
+              <Icon name="plus" size={14} />
+              Add member
             </Button>
           </div>
         )}
