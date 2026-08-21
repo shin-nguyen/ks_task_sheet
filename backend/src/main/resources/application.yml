@@ -23,8 +23,8 @@ spring:
     default-property-inclusion: non_null
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 25MB
+      max-request-size: 25MB
 
 app:
   cors:
@@ -36,6 +36,8 @@ app:
     cookie-secure: ${JWT_COOKIE_SECURE:false}
   demo:
     code-complete-offset-days: 1
+  storage:
+    documents-dir: ${DOCUMENTS_STORAGE_DIR:./data/documents}
 
 logging:
   level:

@@ -34,6 +34,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+async function getBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${BASE}${path}`, { credentials: 'include' });
+  if (!res.ok) {
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    const body = isJson ? await res.json() : undefined;
+    const err = body?.error;
+    throw new ApiError(res.status, err?.code ?? 'UNKNOWN', err?.message ?? res.statusText, err?.fieldErrors);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   post: <T>(path: string, data?: unknown) =>
@@ -44,4 +55,5 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: data !== undefined ? JSON.stringify(data) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   postForm: <T>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
+  getBlob,
 };

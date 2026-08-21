@@ -124,6 +124,17 @@ Key architectural decisions that diverge from a naive reading of the spec:
   rather than aborting the whole import; only unexpected exceptions abort the transaction. The parsing
   behavior is pinned by `JiraCsvSampleParsingTest`, which reads `/samples/jira-export.csv` — if you touch
   parsing logic, that test (and likely the sample CSV) is the thing to check.
+- **Epic documents** (`document` package) is the only feature that persists files to disk — everything else
+  is DB-only. Storage is local filesystem under `app.storage.documents-dir`
+  (`DocumentStorageService`), backed by a Docker named volume (`ks_tasks_documents_data`), not S3/blob
+  storage. `stored_filename` is always a server-generated UUID-based name; the client's filename is never
+  trusted as a path component. Any epic member can view/download; only the **uploader or an admin** can
+  rename/delete (`DocumentController.getOwnedOrThrow`) — a deliberate divergence from `NoteController`'s
+  author-only check. Multipart upload limits must stay in sync across **three** places if changed:
+  `spring.servlet.multipart.max-file-size`/`max-request-size` in `application.yml`, and
+  `client_max_body_size` in `frontend/nginx.conf` (set slightly *above* the Spring limit, e.g. 26M vs 25MB,
+  so Spring's own `MaxUploadSizeExceededException` → `413 FILE_TOO_LARGE` JSON handler is what rejects
+  oversized uploads through the deployed stack, not nginx's default 1MB cap returning a raw HTML error page).
 
 ### API conventions
 

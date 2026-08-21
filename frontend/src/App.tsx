@@ -8,6 +8,7 @@ import { SheetPage } from './pages/SheetPage';
 import { TimelinePage } from './pages/TimelinePage';
 import { ReportPage } from './pages/ReportPage';
 import { NotesPage } from './pages/NotesPage';
+import { DocumentsPage } from './pages/DocumentsPage';
 import { TodosPage } from './pages/TodosPage';
 import { BeRequestsPage } from './pages/BeRequestsPage';
 import { MeetingsPage } from './pages/MeetingsPage';
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/epics/:epicId/timeline" element={<TimelinePage />} />
         <Route path="/epics/:epicId/report" element={<ReportPage />} />
         <Route path="/epics/:epicId/notes" element={<NotesPage />} />
+        <Route path="/epics/:epicId/documents" element={<DocumentsPage />} />
         <Route path="/epics/:epicId/todos" element={<TodosPage />} />
         <Route path="/epics/:epicId/be-requests" element={<BeRequestsPage />} />
         <Route path="/epics/:epicId/meetings" element={<MeetingsPage />} />

@@ -85,6 +85,17 @@ export interface EpicNote {
   updatedAt: string;
 }
 
+export interface EpicDocument {
+  id: string;
+  displayName: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: UserSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EpicTodo {
   id: string;
   title: string;

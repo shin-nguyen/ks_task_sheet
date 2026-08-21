@@ -1,5 +1,32 @@
 # Feature log
 
+## Epic Documents (upload/download/rename/delete) — 2026-08-21
+- **Plan**: `plans/epic-documents-plan.md`
+- **Summary**: Added a dedicated Documents tab per epic for uploading, downloading, renaming, and deleting
+  reference files (specs, design docs, exported files). New `dev.kstasks.document` backend package (mirrors
+  `note` exactly) backed by local-disk storage under a Docker named volume, with `V10__epic_documents.sql`.
+  Any epic member can view/download; only the uploader or an admin can rename/delete
+  (`DocumentController.getOwnedOrThrow`, a deliberate divergence from `NoteController`'s author-only check).
+  Max upload size bumped to 25MB.
+- **Touched**: `backend/.../document/{EpicDocument,EpicDocumentRepository,DocumentStorageService,
+  DocumentController}.java`, `document/dto/{DocumentResponse,RenameDocumentRequest}.java`,
+  `GlobalExceptionHandler` (new `MaxUploadSizeExceededException` → 413 `FILE_TOO_LARGE` handler),
+  `application.yml`, `backend/Dockerfile`, `docker-compose.yml`, `.env.example`, `backend/.gitignore`;
+  `frontend/src/hooks/useDocuments.ts`, `components/documents/UploadDocumentModal.tsx`,
+  `pages/DocumentsPage.tsx`, `types/index.ts`, `lib/api.ts` (`getBlob`), `App.tsx`, `Sidebar.tsx`,
+  `components/ui/Icon.tsx` (`document`/`download` glyphs).
+- **Notes**: `frontend/nginx.conf` needed `client_max_body_size 26M` on the `/api/` proxy location — the
+  container's nginx defaults to 1MB, which would silently reject any upload over that through the deployed
+  stack (a latent gap that also affected CSV import, never caught before since nobody had tested a
+  multi-MB import through the containerized frontend). Not called out in the plan; found and fixed during
+  full-stack verification. The admin-non-uploader rename/delete bypass was verified via a dedicated backend
+  test (`DocumentControllerTest.renameAndDeleteAllowedForAdminNonUploader`) rather than live in the browser,
+  since the seed data only has one admin account and promoting a second one, or removing an epic member to
+  test the 403 case, were both blocked by the auto-mode safety classifier as sensitive account/membership
+  mutations — reasonably so, so those two specific checklist items rely on `EpicAccessService.assertAccess`
+  being the same pre-existing, already-exercised authorization path every other epic resource uses, plus the
+  controller-test coverage of the ownership/admin-bypass logic itself.
+
 ## Todos "Resolve"/"Reopen" button — 2026-08-21
 - **Plan**: inline requirement
 - **Summary**: Added an explicit "Resolve"/"Reopen" text button next to Delete on each Todos row,
