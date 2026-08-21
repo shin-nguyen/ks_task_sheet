@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-public record BeTicketRequestCreateRequest(@NotNull UUID uiTaskId, @NotBlank String note) {
+public record BeTicketRequestCreateRequest(@NotNull UUID uiTaskId, @NotBlank String note, String apiDesign) {
 }

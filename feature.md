@@ -1,5 +1,17 @@
 # Feature log
 
+## BE-Ticket Request API design field — 2026-08-21
+- **Plan**: inline requirement (follow-up to the BE-Ticket Requests feature below)
+- **Summary**: Added an optional `apiDesign` freeform text field to BE-ticket requests so the team can
+  draft the endpoint/request/response shape before the actual BE ticket is created. Rendered as a
+  monospace block on the request row (click-to-edit in place, "+ Add API design" affordance when empty)
+  and as a textarea in the "New request" modal. No separate status field — the existing Open/Resolved
+  state already tracks whether a ticket still needs to be created.
+- **Touched**: `backend/.../berequest/BeTicketRequest.java`, `BeTicketRequestController.java`,
+  `dto/BeTicketRequestCreateRequest.java` / `BeTicketRequestUpdateRequest.java` /
+  `BeTicketRequestResponse.java`; `backend/src/main/resources/db/migration/V9__be_ticket_request_api_design.sql`;
+  `frontend/src/hooks/useBeRequests.ts`, `frontend/src/pages/BeRequestsPage.tsx`, `types/index.ts`.
+
 ## Epic Todos, BE-Ticket Requests, and Meeting Notes — 2026-08-21
 - **Plan**: `plans/todos-be-requests-meetings-plan.md`
 - **Summary**: Added three new epic-scoped features mirroring the `epic_notes` package structure: lightweight

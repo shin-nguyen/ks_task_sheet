@@ -22,12 +22,29 @@ function RequestRow({
   onDelete,
 }: {
   request: BeTicketRequest;
-  onUpdate: (id: string, changes: { note: string; resolved: boolean }) => void;
+  onUpdate: (id: string, changes: { note: string; apiDesign: string | null; resolved: boolean }) => void;
   onDelete: (id: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(request.note);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(request.note);
+  const [editingDesign, setEditingDesign] = useState(false);
+  const [designDraft, setDesignDraft] = useState(request.apiDesign ?? '');
   const { epicId } = useParams<{ epicId: string }>();
+
+  function saveNote() {
+    setEditingNote(false);
+    if (noteDraft.trim() && noteDraft !== request.note) {
+      onUpdate(request.id, { note: noteDraft.trim(), apiDesign: request.apiDesign, resolved: request.resolved });
+    }
+  }
+
+  function saveDesign() {
+    setEditingDesign(false);
+    const trimmed = designDraft.trim();
+    if (trimmed !== (request.apiDesign ?? '')) {
+      onUpdate(request.id, { note: request.note, apiDesign: trimmed || null, resolved: request.resolved });
+    }
+  }
 
   return (
     <div className="border-b border-line2 p-4 last:border-b-0">
@@ -40,7 +57,7 @@ function RequestRow({
         </Link>
         <div className="flex items-center gap-1 text-[13px] text-ink2">
           <button
-            onClick={() => onUpdate(request.id, { note: request.note, resolved: !request.resolved })}
+            onClick={() => onUpdate(request.id, { note: request.note, apiDesign: request.apiDesign, resolved: !request.resolved })}
             className={`flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-primary-soft hover:text-primary ${
               request.resolved ? '' : 'text-done'
             }`}
@@ -55,28 +72,25 @@ function RequestRow({
         </div>
       </div>
 
-      {editing ? (
+      {editingNote ? (
         <textarea
           autoFocus
           className="h-20 w-full resize-none rounded-sm border border-line p-2 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
-            setEditing(false);
-            if (draft.trim() && draft !== request.note) onUpdate(request.id, { note: draft.trim(), resolved: request.resolved });
-          }}
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={saveNote}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
-              setDraft(request.note);
-              setEditing(false);
+              setNoteDraft(request.note);
+              setEditingNote(false);
             }
           }}
         />
       ) : (
         <div
           onClick={() => {
-            setDraft(request.note);
-            setEditing(true);
+            setNoteDraft(request.note);
+            setEditingNote(true);
           }}
           className="cursor-text whitespace-pre-wrap rounded-sm px-1 py-1 text-[14.5px] hover:bg-panel2"
         >
@@ -84,7 +98,47 @@ function RequestRow({
         </div>
       )}
 
-      <div className="mt-2 text-[12.5px] text-ink3">
+      <div className="mt-2.5">
+        <div className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink3">API design</div>
+        {editingDesign ? (
+          <textarea
+            autoFocus
+            placeholder="Endpoint, request/response shape, edge cases…"
+            className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+            value={designDraft}
+            onChange={(e) => setDesignDraft(e.target.value)}
+            onBlur={saveDesign}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setDesignDraft(request.apiDesign ?? '');
+                setEditingDesign(false);
+              }
+            }}
+          />
+        ) : request.apiDesign ? (
+          <div
+            onClick={() => {
+              setDesignDraft(request.apiDesign ?? '');
+              setEditingDesign(true);
+            }}
+            className="cursor-text whitespace-pre-wrap rounded-sm bg-panel2 p-2 font-mono text-[13px] text-ink hover:bg-primary-soft"
+          >
+            {request.apiDesign}
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setDesignDraft('');
+              setEditingDesign(true);
+            }}
+            className="w-full rounded-sm border border-dashed border-line px-2 py-1.5 text-left text-[13px] text-ink3 transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary"
+          >
+            + Add API design (endpoint, request/response shape…)
+          </button>
+        )}
+      </div>
+
+      <div className="mt-2.5 text-[12.5px] text-ink3">
         {request.createdBy.name} · {formatDate(request.createdAt)}
         {request.resolved && request.resolvedAt && <> · resolved {formatDate(request.resolvedAt)}</>}
       </div>
@@ -106,6 +160,7 @@ export function BeRequestsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [uiTaskId, setUiTaskId] = useState('');
   const [note, setNote] = useState('');
+  const [apiDesign, setApiDesign] = useState('');
 
   const uiTaskOptions = useMemo(
     () => (tasks ?? []).filter((t) => t.type === 'UI').map((t) => ({ id: t.id, label: `${t.ticketId} · ${t.title}` })),
@@ -115,7 +170,7 @@ export function BeRequestsPage() {
   const open = requests?.filter((r) => !r.resolved) ?? [];
   const resolved = requests?.filter((r) => r.resolved) ?? [];
 
-  async function handleUpdate(id: string, changes: { note: string; resolved: boolean }) {
+  async function handleUpdate(id: string, changes: { note: string; apiDesign: string | null; resolved: boolean }) {
     try {
       await updateRequest.mutateAsync({ id, ...changes });
     } catch (err) {
@@ -135,9 +190,10 @@ export function BeRequestsPage() {
   async function submit() {
     if (!uiTaskId || !note.trim()) return;
     try {
-      await createRequest.mutateAsync({ uiTaskId, note: note.trim() });
+      await createRequest.mutateAsync({ uiTaskId, note: note.trim(), apiDesign: apiDesign.trim() || null });
       setUiTaskId('');
       setNote('');
+      setApiDesign('');
       setModalOpen(false);
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not create request', 'error');
@@ -181,7 +237,7 @@ export function BeRequestsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title="New BE-ticket request"
-        width={480}
+        width={560}
         footer={
           <>
             <Button onClick={() => setModalOpen(false)}>Cancel</Button>
@@ -208,9 +264,18 @@ export function BeRequestsPage() {
             <textarea
               autoFocus
               placeholder="What BE ticket will this need?"
-              className="h-28 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
               value={note}
               onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[13px] font-medium text-ink2">API design (optional)</label>
+            <textarea
+              placeholder="Endpoint, request/response shape, edge cases…"
+              className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2.5 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              value={apiDesign}
+              onChange={(e) => setApiDesign(e.target.value)}
             />
           </div>
         </div>

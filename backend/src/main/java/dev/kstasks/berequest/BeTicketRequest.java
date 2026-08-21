@@ -27,6 +27,9 @@ public class BeTicketRequest {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "api_design", columnDefinition = "TEXT")
+    private String apiDesign;
+
     @Column(nullable = false)
     private boolean resolved = false;
 
@@ -75,6 +78,14 @@ public class BeTicketRequest {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getApiDesign() {
+        return apiDesign;
+    }
+
+    public void setApiDesign(String apiDesign) {
+        this.apiDesign = apiDesign;
     }
 
     public boolean isResolved() {

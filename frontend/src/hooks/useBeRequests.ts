@@ -13,7 +13,8 @@ export function useBeRequests(epicId: string | undefined) {
 export function useCreateBeRequest(epicId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { uiTaskId: string; note: string }) => api.post<BeTicketRequest>(`/epics/${epicId}/be-requests`, input),
+    mutationFn: (input: { uiTaskId: string; note: string; apiDesign: string | null }) =>
+      api.post<BeTicketRequest>(`/epics/${epicId}/be-requests`, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['be-requests', epicId] }),
   });
 }
@@ -21,8 +22,8 @@ export function useCreateBeRequest(epicId: string) {
 export function useUpdateBeRequest(epicId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, note, resolved }: { id: string; note: string; resolved: boolean }) =>
-      api.put<BeTicketRequest>(`/be-requests/${id}`, { note, resolved }),
+    mutationFn: ({ id, note, apiDesign, resolved }: { id: string; note: string; apiDesign: string | null; resolved: boolean }) =>
+      api.put<BeTicketRequest>(`/be-requests/${id}`, { note, apiDesign, resolved }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['be-requests', epicId] }),
   });
 }

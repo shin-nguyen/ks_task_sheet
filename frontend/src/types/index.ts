@@ -106,6 +106,7 @@ export interface BeTicketRequest {
   id: string;
   uiTask: BeTicketRequestTaskSummary;
   note: string;
+  apiDesign: string | null;
   resolved: boolean;
   createdBy: UserSummary;
   createdAt: string;

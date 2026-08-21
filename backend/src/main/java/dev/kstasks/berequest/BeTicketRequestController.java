@@ -62,6 +62,7 @@ public class BeTicketRequestController {
         request.setEpic(epic);
         request.setUiTask(uiTask);
         request.setNote(req.note().trim());
+        request.setApiDesign(req.apiDesign() != null && !req.apiDesign().isBlank() ? req.apiDesign().trim() : null);
         request.setResolved(false);
         request.setCreatedBy(CurrentUser.get());
         request = beTicketRequestRepository.save(request);
@@ -72,6 +73,7 @@ public class BeTicketRequestController {
     public BeTicketRequestResponse update(@PathVariable UUID id, @Valid @RequestBody BeTicketRequestUpdateRequest req) {
         BeTicketRequest request = getAccessibleOrThrow(id);
         request.setNote(req.note().trim());
+        request.setApiDesign(req.apiDesign() != null && !req.apiDesign().isBlank() ? req.apiDesign().trim() : null);
         if (req.resolved() && !request.isResolved()) {
             request.setResolvedAt(Instant.now());
         } else if (!req.resolved() && request.isResolved()) {
