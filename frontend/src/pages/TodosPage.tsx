@@ -139,12 +139,21 @@ export function TodosPage() {
 
             <DuePill value={todo.dueDate} onChange={(v) => patch(todo, { dueDate: v })} />
 
-            <button
-              onClick={() => deleteTodo.mutate(todo.id)}
-              className="shrink-0 rounded-sm p-1.5 text-ink3 transition-colors hover:bg-danger-soft hover:text-danger"
-            >
-              <Icon name="trash" size={14} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1 text-[13px] text-ink2">
+              <button
+                onClick={() => patch(todo, { done: !todo.done })}
+                className={`flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-primary-soft hover:text-primary ${todo.done ? '' : 'text-done'}`}
+              >
+                <Icon name="check" size={12} />
+                {todo.done ? 'Reopen' : 'Resolve'}
+              </button>
+              <button
+                onClick={() => deleteTodo.mutate(todo.id)}
+                className="flex items-center gap-1 rounded-sm p-1.5 hover:bg-danger-soft hover:text-danger"
+              >
+                <Icon name="trash" size={14} />
+              </button>
+            </div>
           </div>
         ))}
 

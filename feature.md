@@ -1,5 +1,12 @@
 # Feature log
 
+## Todos "Resolve"/"Reopen" button — 2026-08-21
+- **Plan**: inline requirement
+- **Summary**: Added an explicit "Resolve"/"Reopen" text button next to Delete on each Todos row,
+  matching the BE Requests page's action-button style. It toggles the same `done` state as the existing
+  checkbox (both stay in sync) — purely a UI consistency addition, no API/schema change.
+- **Touched**: `frontend/src/pages/TodosPage.tsx`.
+
 ## BE-Ticket Request API design field — 2026-08-21
 - **Plan**: inline requirement (follow-up to the BE-Ticket Requests feature below)
 - **Summary**: Added an optional `apiDesign` freeform text field to BE-ticket requests so the team can
