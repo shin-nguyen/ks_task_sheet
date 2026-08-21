@@ -10,6 +10,9 @@ const NAV_ITEMS = [
   { key: 'timeline', label: 'Timeline', icon: 'timeline' as const },
   { key: 'report', label: 'Report', icon: 'report' as const },
   { key: 'notes', label: 'Notes', icon: 'notes' as const },
+  { key: 'todos', label: 'Todos', icon: 'check' as const },
+  { key: 'be-requests', label: 'BE Requests', icon: 'flag' as const },
+  { key: 'meetings', label: 'Meetings', icon: 'clock' as const },
   { key: 'members', label: 'Members', icon: 'members' as const },
 ];
 

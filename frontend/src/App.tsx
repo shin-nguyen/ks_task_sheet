@@ -8,6 +8,9 @@ import { SheetPage } from './pages/SheetPage';
 import { TimelinePage } from './pages/TimelinePage';
 import { ReportPage } from './pages/ReportPage';
 import { NotesPage } from './pages/NotesPage';
+import { TodosPage } from './pages/TodosPage';
+import { BeRequestsPage } from './pages/BeRequestsPage';
+import { MeetingsPage } from './pages/MeetingsPage';
 import { StatusSettingsPage } from './pages/StatusSettingsPage';
 import { TeamPage } from './pages/TeamPage';
 import { EpicMembersPage } from './pages/EpicMembersPage';
@@ -51,6 +54,9 @@ export default function App() {
         <Route path="/epics/:epicId/timeline" element={<TimelinePage />} />
         <Route path="/epics/:epicId/report" element={<ReportPage />} />
         <Route path="/epics/:epicId/notes" element={<NotesPage />} />
+        <Route path="/epics/:epicId/todos" element={<TodosPage />} />
+        <Route path="/epics/:epicId/be-requests" element={<BeRequestsPage />} />
+        <Route path="/epics/:epicId/meetings" element={<MeetingsPage />} />
         <Route path="/epics/:epicId/members" element={<EpicMembersPage />} />
         <Route path="/settings" element={<SettingsPage />}>
           <Route index element={<SettingsIndexRedirect />} />

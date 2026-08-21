@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEpic } from '../hooks/useEpics';
 import { useCreateTask, useDeleteTask, useLinkTask, useTasks, useUnlinkTask, useUpdateTask, tasksKey } from '../hooks/useTasks';
@@ -18,6 +18,8 @@ import type { TaskType } from '../types';
 
 export function SheetPage() {
   const { epicId } = useParams<{ epicId: string }>();
+  const [searchParams] = useSearchParams();
+  const focusTaskId = searchParams.get('focus');
   const { data: epic } = useEpic(epicId);
   const { data: tasks, isLoading } = useTasks(epicId);
   const { data: users } = useUsers();
@@ -57,6 +59,16 @@ export function SheetPage() {
       return true;
     });
   }, [tasks, search, typeFilter, statusFilter, assigneeFilter]);
+
+  useEffect(() => {
+    if (!focusTaskId || !tasks || tasks.length === 0) return;
+    const el = document.getElementById(`task-row-${focusTaskId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('bg-primary-soft');
+    const timer = setTimeout(() => el.classList.remove('bg-primary-soft'), 1200);
+    return () => clearTimeout(timer);
+  }, [focusTaskId, tasks]);
 
   async function handleUpdate(id: string, input: Parameters<typeof updateTask.mutateAsync>[0]['input']) {
     try {

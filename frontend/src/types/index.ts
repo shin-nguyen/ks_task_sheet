@@ -85,6 +85,45 @@ export interface EpicNote {
   updatedAt: string;
 }
 
+export interface EpicTodo {
+  id: string;
+  title: string;
+  assignee: UserSummary | null;
+  dueDate: string | null;
+  done: boolean;
+  createdBy: UserSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BeTicketRequestTaskSummary {
+  id: string;
+  ticketId: string;
+  title: string;
+}
+
+export interface BeTicketRequest {
+  id: string;
+  uiTask: BeTicketRequestTaskSummary;
+  note: string;
+  resolved: boolean;
+  createdBy: UserSummary;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface EpicMeeting {
+  id: string;
+  title: string;
+  scheduledAt: string;
+  link: string | null;
+  agenda: string | null;
+  minutes: string | null;
+  createdBy: UserSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TimelineConfig {
   userId: string;
   startDate: string; // yyyy-MM-dd
