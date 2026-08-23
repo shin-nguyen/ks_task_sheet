@@ -43,6 +43,11 @@ default in `.env.example`), demo data seeds on first boot — 4 users, 1 epic, ~
 | cara@team.dev     | password123   |
 | dan@team.dev      | password123   |
 
+(Alice is seeded as `ADMIN`, the rest as `MEMBER`.) With seeding disabled (`SPRING_PROFILES_ACTIVE=""`),
+sign up at `/signup` instead — the **first account ever created becomes `ADMIN`** automatically, every
+account after that defaults to `MEMBER`. Admins can promote/demote other users and reset their passwords
+from `/settings/team`.
+
 To rebuild after pulling changes: `docker compose up -d --build`.
 
 ## Local development (without Docker)

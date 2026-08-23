@@ -1,9 +1,12 @@
 package dev.kstasks.auth;
 
+import dev.kstasks.auth.dto.AdminResetPasswordRequest;
 import dev.kstasks.auth.dto.UpdateRoleRequest;
 import dev.kstasks.auth.dto.UserResponse;
 import dev.kstasks.common.ApiException;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,9 +17,11 @@ import java.util.UUID;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -35,5 +40,14 @@ public class UserController {
         }
         target.setRole(req.role());
         return UserResponse.from(userRepository.save(target));
+    }
+
+    @PatchMapping("/{id}/password")
+    public ResponseEntity<Void> resetPassword(@PathVariable UUID id, @Valid @RequestBody AdminResetPasswordRequest req) {
+        User target = userRepository.findById(id).orElseThrow(() -> ApiException.notFound("User not found"));
+        target.setPassword(passwordEncoder.encode(req.newPassword()));
+        target.setMustChangePassword(true);
+        userRepository.save(target);
+        return ResponseEntity.noContent().build();
     }
 }

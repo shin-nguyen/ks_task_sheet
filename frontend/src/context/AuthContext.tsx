@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
-import type { UserSummary } from '../types';
+import type { AuthUser } from '../types';
 
 interface AuthContextValue {
-  user: UserSummary | null;
+  user: AuthUser | null;
   loading: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -15,24 +15,24 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserSummary | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
-      .get<UserSummary>('/auth/me')
+      .get<AuthUser>('/auth/me')
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const u = await api.post<UserSummary>('/auth/login', { email, password });
+    const u = await api.post<AuthUser>('/auth/login', { email, password });
     setUser(u);
   }, []);
 
   const signup = useCallback(async (email: string, name: string, password: string) => {
-    const u = await api.post<UserSummary>('/auth/signup', { email, name, password });
+    const u = await api.post<AuthUser>('/auth/signup', { email, name, password });
     setUser(u);
   }, []);
 
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     await api.patch('/auth/password', { currentPassword, newPassword });
+    setUser((u) => (u ? { ...u, mustChangePassword: false } : u));
   }, []);
 
   const isAdmin = user?.role === 'ADMIN';

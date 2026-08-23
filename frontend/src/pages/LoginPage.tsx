@@ -7,8 +7,8 @@ import { Input } from '../components/ui/Input';
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('alice@team.dev');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,9 +53,6 @@ export function LoginPage() {
           </form>
           <p className="mt-5 text-center text-sm text-ink2">
             No account? <Link to="/signup" className="font-semibold text-primary">Sign up</Link>
-          </p>
-          <p className="mt-3 text-center text-xs text-ink3">
-            Demo: alice@team.dev / ben@team.dev / cara@team.dev / dan@team.dev — password: password123
           </p>
         </div>
       </div>

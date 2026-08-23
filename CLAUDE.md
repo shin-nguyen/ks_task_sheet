@@ -166,3 +166,11 @@ itself is unit-testable in isolation if tests are ever added.
 
 Auth state is a React context (`context/AuthContext.tsx`) that calls `GET /api/v1/auth/me` on load; there's
 also a `ToastContext` for the error/success toasts used across optimistic-update flows.
+
+## Git commits
+
+Commit messages are short and simple: **one line, imperative mood, no body, no `Co-Authored-By` trailer**
+(`attribution.commit` is set to `""` in `.claude/settings.json` to suppress it). Match the existing log
+style, e.g. `Add Resolve/Reopen button to Todos rows`, `Stop tracking frontend/tsconfig.tsbuildinfo`. A
+`PreToolUse` hook in `.claude/settings.json` blocks `git commit` calls that use a heredoc body or more than
+one `-m` flag — write `git commit -m "Short imperative summary"`, nothing more.

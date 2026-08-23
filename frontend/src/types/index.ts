@@ -7,6 +7,10 @@ export interface UserSummary {
   role: UserRole;
 }
 
+export interface AuthUser extends UserSummary {
+  mustChangePassword: boolean;
+}
+
 export interface EpicMember {
   userId: string;
   name: string;

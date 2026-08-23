@@ -1,9 +1,9 @@
 package dev.kstasks.auth;
 
+import dev.kstasks.auth.dto.AuthUserResponse;
 import dev.kstasks.auth.dto.ChangePasswordRequest;
 import dev.kstasks.auth.dto.LoginRequest;
 import dev.kstasks.auth.dto.SignupRequest;
-import dev.kstasks.auth.dto.UserResponse;
 import dev.kstasks.common.ApiException;
 import dev.kstasks.config.CookieUtil;
 import dev.kstasks.config.JwtService;
@@ -32,7 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest req, HttpServletResponse response) {
+    public ResponseEntity<AuthUserResponse> signup(@Valid @RequestBody SignupRequest req, HttpServletResponse response) {
         if (userRepository.existsByEmailIgnoreCase(req.email())) {
             throw ApiException.conflict("EMAIL_TAKEN", "An account with this email already exists");
         }
@@ -45,11 +45,11 @@ public class AuthController {
 
         String token = jwtService.generateToken(user.getId(), user.getEmail());
         cookieUtil.setAuthCookie(response, token);
-        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
+        return ResponseEntity.status(HttpStatus.CREATED).body(AuthUserResponse.from(user));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
+    public ResponseEntity<AuthUserResponse> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
         User user = userRepository.findByEmailIgnoreCase(req.email())
                 .orElseThrow(() -> ApiException.unauthorized("Invalid email or password"));
         if (!passwordEncoder.matches(req.password(), user.getPassword())) {
@@ -57,7 +57,7 @@ public class AuthController {
         }
         String token = jwtService.generateToken(user.getId(), user.getEmail());
         cookieUtil.setAuthCookie(response, token);
-        return ResponseEntity.ok(UserResponse.from(user));
+        return ResponseEntity.ok(AuthUserResponse.from(user));
     }
 
     @PostMapping("/logout")
@@ -67,8 +67,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> me() {
-        return ResponseEntity.ok(UserResponse.from(CurrentUser.get()));
+    public ResponseEntity<AuthUserResponse> me() {
+        return ResponseEntity.ok(AuthUserResponse.from(CurrentUser.get()));
     }
 
     @PatchMapping("/password")
@@ -79,6 +79,7 @@ public class AuthController {
             throw ApiException.badRequest("INVALID_PASSWORD", "Current password is incorrect");
         }
         user.setPassword(passwordEncoder.encode(req.newPassword()));
+        user.setMustChangePassword(false);
         userRepository.save(user);
         return ResponseEntity.noContent().build();
     }

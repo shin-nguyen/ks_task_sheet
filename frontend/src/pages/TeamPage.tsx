@@ -1,16 +1,93 @@
+import { useState } from 'react';
 import { Topbar } from '../components/layout/Topbar';
 import { Select } from '../components/ui/Select';
 import { Avatar } from '../components/ui/Avatar';
-import { useUpdateUserRole, useUsers } from '../hooks/useUsers';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Modal } from '../components/ui/Modal';
+import { useAdminResetPassword, useUpdateUserRole, useUsers } from '../hooks/useUsers';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole, UserSummary } from '../types';
 
+function ResetPasswordModal({ member, onClose }: { member: UserSummary; onClose: () => void }) {
+  const resetPassword = useAdminResetPassword();
+  const toast = useToast();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const valid = newPassword.length >= 6 && newPassword === confirmPassword;
+
+  async function submit() {
+    setError(null);
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirmation do not match');
+      return;
+    }
+    try {
+      await resetPassword.mutateAsync({ id: member.id, newPassword });
+      toast.show(`Password reset for ${member.name}`, 'success');
+      onClose();
+    } catch (err) {
+      toast.show(isApiError(err) ? err.message : 'Could not reset password', 'error');
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Reset password for ${member.name}`}
+      width={420}
+      footer={
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={submit} disabled={!valid || resetPassword.isPending}>
+            Reset password
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <p className="text-[13.5px] text-ink2">
+          Sets a new password for this user. They'll be required to change it the next time they log in.
+        </p>
+        <div>
+          <label className="mb-1 block text-[13px] font-medium text-ink2">New password</label>
+          <Input
+            autoFocus
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={6}
+            className="w-full"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[13px] font-medium text-ink2">Confirm new password</label>
+          <Input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={6}
+            className="w-full"
+          />
+        </div>
+        {error && <p className="rounded-sm bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
 function TeamRow({ member }: { member: UserSummary }) {
   const { user: currentUser } = useAuth();
   const updateRole = useUpdateUserRole();
   const toast = useToast();
+  const [resetting, setResetting] = useState(false);
 
   async function changeRole(role: UserRole) {
     if (role === member.role) return;
@@ -31,6 +108,7 @@ function TeamRow({ member }: { member: UserSummary }) {
         </div>
         <div className="truncate text-[13.5px] text-ink2">{member.email}</div>
       </div>
+      <Button onClick={() => setResetting(true)}>Reset password</Button>
       <Select
         value={member.role}
         onChange={(e) => changeRole(e.target.value as UserRole)}
@@ -40,6 +118,7 @@ function TeamRow({ member }: { member: UserSummary }) {
         <option value="ADMIN">Admin</option>
         <option value="MEMBER">Member</option>
       </Select>
+      {resetting && <ResetPasswordModal member={member} onClose={() => setResetting(false)} />}
     </div>
   );
 }

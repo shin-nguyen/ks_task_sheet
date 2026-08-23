@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
@@ -16,13 +16,21 @@ import { StatusSettingsPage } from './pages/StatusSettingsPage';
 import { TeamPage } from './pages/TeamPage';
 import { EpicMembersPage } from './pages/EpicMembersPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { ForcePasswordChangePage } from './pages/ForcePasswordChangePage';
 import { SettingsPage } from './pages/SettingsPage';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <div className="flex min-h-screen items-center justify-center text-ink2">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.mustChangePassword && location.pathname !== '/force-password-change') {
+    return <Navigate to="/force-password-change" replace />;
+  }
+  if (!user.mustChangePassword && location.pathname === '/force-password-change') {
+    return <Navigate to="/epics" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -42,6 +50,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/force-password-change" element={<RequireAuth><ForcePasswordChangePage /></RequireAuth>} />
       <Route
         element={
           <RequireAuth>
