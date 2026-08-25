@@ -7,7 +7,10 @@ import { Topbar } from '../components/layout/Topbar';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
+import { Modal } from '../components/ui/Modal';
 import { Markdown } from '../components/ui/Markdown';
+import { previewText } from '../lib/textPreview';
+import type { EpicNote } from '../types';
 
 function formatRelative(iso: string) {
   const then = new Date(iso).getTime();
@@ -26,6 +29,134 @@ function formatFull(iso: string) {
   return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+function handleComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>, onSubmit: () => void, onCancel: () => void) {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    onSubmit();
+  } else if (e.key === 'Escape') {
+    onCancel();
+  }
+}
+
+function NewNoteModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (content: string) => Promise<void> }) {
+  const [draft, setDraft] = useState('');
+
+  async function submit() {
+    if (!draft.trim()) return;
+    await onCreate(draft.trim());
+    setDraft('');
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => {
+        setDraft('');
+        onClose();
+      }}
+      title="New note"
+      width={560}
+      footer={
+        <>
+          <span className="mr-auto self-center text-[12px] text-ink3">Ctrl+Enter to save</span>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" disabled={!draft.trim()} onClick={submit}>
+            Add note
+          </Button>
+        </>
+      }
+    >
+      <textarea
+        autoFocus
+        placeholder="Write a note (markdown supported)…"
+        className="h-40 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => handleComposerKeyDown(e, submit, onClose)}
+      />
+    </Modal>
+  );
+}
+
+function NoteDetailModal({
+  note,
+  isOwner,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  note: EpicNote;
+  isOwner: boolean;
+  onClose: () => void;
+  onSave: (content: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.content);
+
+  function save() {
+    if (draft.trim()) onSave(draft.trim());
+    setEditing(false);
+  }
+
+  const edited = note.updatedAt !== note.createdAt;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Note"
+      width={620}
+      footer={
+        editing ? (
+          <>
+            <span className="mr-auto self-center text-[12px] text-ink3">Ctrl+Enter to save</span>
+            <Button
+              onClick={() => {
+                setDraft(note.content);
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" disabled={!draft.trim()} onClick={save}>
+              Save
+            </Button>
+          </>
+        ) : (
+          isOwner && (
+            <>
+              <Button variant="danger" onClick={onDelete} className="mr-auto">
+                Delete
+              </Button>
+              <Button onClick={() => setEditing(true)}>Edit</Button>
+            </>
+          )
+        )
+      }
+    >
+      <div className="mb-3 flex items-center gap-2 text-[13px] text-ink2">
+        <Avatar name={note.author.name} size={22} />
+        <span className="font-semibold text-ink">{note.author.name}</span>
+        <span className="text-ink3">·</span>
+        <span title={formatFull(note.updatedAt)}>{formatRelative(note.updatedAt)}</span>
+        {edited && <span className="text-ink3">· edited</span>}
+      </div>
+      {editing ? (
+        <textarea
+          autoFocus
+          className="h-56 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => handleComposerKeyDown(e, save, () => setEditing(false))}
+        />
+      ) : (
+        <Markdown content={note.content} />
+      )}
+    </Modal>
+  );
+}
+
 export function NotesPage() {
   const { epicId } = useParams<{ epicId: string }>();
   const { data: epic } = useEpic(epicId);
@@ -36,37 +167,15 @@ export function NotesPage() {
   const deleteNote = useDeleteNote(epicId!);
 
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState('');
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
 
   const sortedNotes = useMemo(
     () => (notes ? [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) : undefined),
     [notes],
   );
+  const openNote = sortedNotes?.find((n) => n.id === openNoteId) ?? null;
 
   if (!epicId) return null;
-
-  async function submitDraft() {
-    if (!draft.trim()) return;
-    await createNote.mutateAsync(draft);
-    setDraft('');
-    setAdding(false);
-  }
-
-  function submitEdit(id: string) {
-    updateNote.mutate({ id, content: editDraft });
-    setEditingId(null);
-  }
-
-  function handleComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>, onSubmit: () => void, onCancel: () => void) {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      onSubmit();
-    } else if (e.key === 'Escape') {
-      onCancel();
-    }
-  }
 
   return (
     <div>
@@ -88,122 +197,59 @@ export function NotesPage() {
         }
       />
 
-      <div className="max-w-[760px] overflow-hidden rounded-lg border border-line bg-panel shadow-card">
-        {adding && (
-          <div className="animate-[slide-down_0.16s_ease-out] border-b border-line bg-panel2 p-4">
-            <textarea
-              autoFocus
-              placeholder="Write a note (markdown supported)…"
-              className="h-24 w-full resize-none rounded-sm border border-line bg-white p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) =>
-                handleComposerKeyDown(
-                  e,
-                  () => submitDraft(),
-                  () => {
-                    setAdding(false);
-                    setDraft('');
-                  },
-                )
-              }
-            />
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <span className="text-[12px] text-ink3">Ctrl+Enter to save · Esc to cancel</span>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => {
-                    setAdding(false);
-                    setDraft('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary" disabled={!draft.trim()} onClick={submitDraft}>
-                  Add note
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+      {sortedNotes && sortedNotes.length === 0 && (
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-line bg-panel px-6 py-14 text-center shadow-card">
+          <Icon name="notes" size={22} className="text-ink3" />
+          <p className="text-[14.5px] font-semibold text-ink">No notes yet</p>
+          <p className="max-w-[320px] text-[13px] text-ink2">Add the first note to start tracking context for this epic.</p>
+        </div>
+      )}
 
-        {sortedNotes && sortedNotes.length === 0 && !adding && (
-          <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
-            <Icon name="notes" size={22} className="text-ink3" />
-            <p className="text-[14.5px] font-semibold text-ink">No notes yet</p>
-            <p className="max-w-[320px] text-[13px] text-ink2">Add the first note to start tracking context for this epic.</p>
-          </div>
-        )}
-
-        {sortedNotes && sortedNotes.length > 0 && (
-          <div className="max-h-[62vh] divide-y divide-line overflow-y-auto">
-            {sortedNotes.map((note) => {
-              const edited = note.updatedAt !== note.createdAt;
-              const isOwner = user?.id === note.author.id;
-              return (
-                <div key={note.id} className="px-4 py-3.5">
-                  <div className="mb-1.5 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2 text-[13px] text-ink2">
-                      <Avatar name={note.author.name} size={20} />
-                      <span className="truncate font-semibold text-ink">{note.author.name}</span>
-                      <span className="text-ink3">·</span>
-                      <span title={formatFull(note.updatedAt)}>{formatRelative(note.updatedAt)}</span>
-                      {edited && (
-                        <span className="text-ink3" title={`Edited ${formatFull(note.updatedAt)}`}>
-                          · edited
-                        </span>
-                      )}
-                    </div>
-                    {isOwner && editingId !== note.id && (
-                      <div className="flex shrink-0 items-center gap-0.5 text-ink2">
-                        <button
-                          title="Edit note"
-                          onClick={() => {
-                            setEditingId(note.id);
-                            setEditDraft(note.content);
-                          }}
-                          className="flex items-center rounded-sm p-1.5 hover:bg-primary-soft hover:text-primary"
-                        >
-                          <Icon name="pencil" size={13} />
-                        </button>
-                        <button
-                          title="Delete note"
-                          onClick={() => deleteNote.mutate(note.id)}
-                          className="flex items-center rounded-sm p-1.5 hover:bg-danger-soft hover:text-danger"
-                        >
-                          <Icon name="trash" size={13} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {editingId === note.id ? (
-                    <div>
-                      <textarea
-                        autoFocus
-                        className="h-24 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-                        value={editDraft}
-                        onChange={(e) => setEditDraft(e.target.value)}
-                        onKeyDown={(e) => handleComposerKeyDown(e, () => submitEdit(note.id), () => setEditingId(null))}
-                      />
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="text-[12px] text-ink3">Ctrl+Enter to save · Esc to cancel</span>
-                        <div className="flex gap-2">
-                          <Button onClick={() => setEditingId(null)}>Cancel</Button>
-                          <Button variant="primary" onClick={() => submitEdit(note.id)}>
-                            Save
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <Markdown content={note.content} />
-                  )}
+      {sortedNotes && sortedNotes.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {sortedNotes.map((note) => {
+            const edited = note.updatedAt !== note.createdAt;
+            return (
+              <button
+                key={note.id}
+                onClick={() => setOpenNoteId(note.id)}
+                className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
+              >
+                <div className="mb-1.5 flex items-center gap-2 text-[12.5px] text-ink2">
+                  <Avatar name={note.author.name} size={18} />
+                  <span className="truncate font-semibold text-ink">{note.author.name}</span>
+                  <span className="shrink-0 text-ink3">·</span>
+                  <span className="shrink-0">{formatRelative(note.updatedAt)}</span>
+                  {edited && <span className="shrink-0 text-ink3">· edited</span>}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                <p className="line-clamp-4 flex-1 text-[13.5px] leading-relaxed text-ink2">{previewText(note.content, 220)}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <NewNoteModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onCreate={async (content) => {
+          await createNote.mutateAsync(content);
+          setAdding(false);
+        }}
+      />
+
+      {openNote && (
+        <NoteDetailModal
+          note={openNote}
+          isOwner={user?.id === openNote.author.id}
+          onClose={() => setOpenNoteId(null)}
+          onSave={(content) => updateNote.mutate({ id: openNote.id, content })}
+          onDelete={() => {
+            deleteNote.mutate(openNote.id);
+            setOpenNoteId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

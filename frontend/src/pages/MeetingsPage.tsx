@@ -8,6 +8,7 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Markdown } from '../components/ui/Markdown';
+import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { EpicMeeting } from '../types';
@@ -139,47 +140,78 @@ function MeetingModal({
   );
 }
 
-function MeetingCard({ meeting, onEdit, onDelete }: { meeting: EpicMeeting; onEdit: () => void; onDelete: () => void }) {
+function MeetingDetailModal({
+  meeting,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  meeting: EpicMeeting;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   return (
-    <div className="mb-3 rounded-lg border border-line bg-panel p-4 shadow-card">
-      <div className="mb-1.5 flex items-start justify-between gap-2">
-        <div>
-          <b className="text-[15px] text-ink">{meeting.title}</b>
-          <div className="mt-0.5 font-mono text-[12.5px] text-ink2">{formatMeetingTime(meeting.scheduledAt)}</div>
-        </div>
-        <div className="flex shrink-0 gap-1 text-[13.5px] text-ink2">
-          <button onClick={onEdit} className="flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-primary-soft hover:text-primary">
-            <Icon name="pencil" size={12} />
-            Edit
-          </button>
-          <button onClick={onDelete} className="flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-danger-soft hover:text-danger">
-            <Icon name="trash" size={12} />
+    <Modal
+      open
+      onClose={onClose}
+      title={meeting.title}
+      width={620}
+      footer={
+        <>
+          <Button variant="danger" onClick={onDelete} className="mr-auto">
             Delete
-          </button>
-        </div>
+          </Button>
+          <Button onClick={onEdit}>Edit</Button>
+        </>
+      }
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-ink2">
+        <span className="inline-flex items-center gap-1 font-mono text-[12.5px]">
+          <Icon name="clock" size={13} />
+          {formatMeetingTime(meeting.scheduledAt)}
+        </span>
+        {meeting.link && (
+          <a href={meeting.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+            <Icon name="link" size={12} />
+            {meeting.link}
+          </a>
+        )}
       </div>
 
-      {meeting.link && (
-        <a href={meeting.link} target="_blank" rel="noreferrer" className="mb-1.5 inline-flex items-center gap-1 text-[13.5px] text-primary hover:underline">
-          <Icon name="link" size={12} />
-          {meeting.link}
-        </a>
-      )}
-
       {meeting.agenda && (
-        <div className="mt-1.5">
-          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink3">Agenda</div>
-          <Markdown content={meeting.agenda} className="text-[14px]" />
+        <div className="mb-3">
+          <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-ink3">Agenda</div>
+          <Markdown content={meeting.agenda} />
         </div>
       )}
 
       {meeting.minutes && (
-        <div className="mt-1.5">
-          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink3">Minutes</div>
-          <Markdown content={meeting.minutes} className="text-[14px]" />
+        <div>
+          <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-ink3">Minutes</div>
+          <Markdown content={meeting.minutes} />
         </div>
       )}
-    </div>
+
+      {!meeting.agenda && !meeting.minutes && <p className="text-[14px] text-ink2">No agenda or minutes recorded yet.</p>}
+    </Modal>
+  );
+}
+
+function MeetingCard({ meeting, onOpen }: { meeting: EpicMeeting; onOpen: () => void }) {
+  const preview = meeting.agenda ? previewText(meeting.agenda, 140) : meeting.minutes ? previewText(meeting.minutes, 140) : '';
+  return (
+    <button
+      onClick={onOpen}
+      className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
+    >
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <b className="line-clamp-1 text-[15px] text-ink">{meeting.title}</b>
+        {meeting.link && <Icon name="link" size={13} className="mt-0.5 shrink-0 text-ink3" />}
+      </div>
+      <div className="mb-2 font-mono text-[12px] text-ink2">{formatMeetingTime(meeting.scheduledAt)}</div>
+      <p className="line-clamp-3 flex-1 text-[13.5px] leading-relaxed text-ink2">{preview || 'No agenda or minutes yet.'}</p>
+    </button>
   );
 }
 
@@ -195,12 +227,14 @@ export function MeetingsPage() {
 
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<EpicMeeting | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   if (!epicId) return null;
 
   const now = Date.now();
   const upcoming = (meetings ?? []).filter((m) => new Date(m.scheduledAt).getTime() >= now);
   const past = (meetings ?? []).filter((m) => new Date(m.scheduledAt).getTime() < now);
+  const openMeeting = (meetings ?? []).find((m) => m.id === openId) ?? null;
 
   async function handleCreate(input: MeetingInput) {
     try {
@@ -223,6 +257,7 @@ export function MeetingsPage() {
   async function handleDelete(id: string) {
     try {
       await deleteMeeting.mutateAsync(id);
+      setOpenId(null);
       toast.show('Meeting deleted', 'success');
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not delete meeting', 'error');
@@ -231,30 +266,38 @@ export function MeetingsPage() {
 
   return (
     <div>
-      <Topbar title="Meetings" subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined} />
-
-      <div className="max-w-[760px]">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-ink3">Upcoming ({upcoming.length})</h3>
+      <Topbar
+        title="Meetings"
+        subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined}
+        right={
           <Button variant="primary" onClick={() => setCreating(true)} className="inline-flex items-center gap-1.5">
             <Icon name="plus" size={14} />
             New meeting
           </Button>
-        </div>
-        {upcoming.length === 0 && <p className="mb-6 text-[14.5px] text-ink2">No upcoming meetings.</p>}
-        {upcoming.map((m) => (
-          <MeetingCard key={m.id} meeting={m} onEdit={() => setEditing(m)} onDelete={() => handleDelete(m.id)} />
-        ))}
+        }
+      />
 
-        {past.length > 0 && (
-          <>
-            <h3 className="mb-2 mt-6 text-[13px] font-semibold uppercase tracking-wide text-ink3">Past ({past.length})</h3>
+      <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink3">Upcoming ({upcoming.length})</h3>
+      {upcoming.length === 0 ? (
+        <p className="mb-6 text-[14.5px] text-ink2">No upcoming meetings.</p>
+      ) : (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {upcoming.map((m) => (
+            <MeetingCard key={m.id} meeting={m} onOpen={() => setOpenId(m.id)} />
+          ))}
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <>
+          <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink3">Past ({past.length})</h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {past.map((m) => (
-              <MeetingCard key={m.id} meeting={m} onEdit={() => setEditing(m)} onDelete={() => handleDelete(m.id)} />
+              <MeetingCard key={m.id} meeting={m} onOpen={() => setOpenId(m.id)} />
             ))}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
 
       <MeetingModal open={creating} title="New meeting" initial={emptyForm()} onClose={() => setCreating(false)} onSave={handleCreate} />
 
@@ -265,6 +308,18 @@ export function MeetingsPage() {
           initial={formFromMeeting(editing)}
           onClose={() => setEditing(null)}
           onSave={(input) => handleUpdate(editing.id, input)}
+        />
+      )}
+
+      {openMeeting && !editing && (
+        <MeetingDetailModal
+          meeting={openMeeting}
+          onClose={() => setOpenId(null)}
+          onEdit={() => {
+            setEditing(openMeeting);
+            setOpenId(null);
+          }}
+          onDelete={() => handleDelete(openMeeting.id)}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { Markdown } from '../components/ui/Markdown';
+import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { BeTicketRequest } from '../types';
@@ -17,25 +18,55 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function RequestRow({
+function RequestCard({ request, onOpen }: { request: BeTicketRequest; onOpen: () => void }) {
+  return (
+    <button
+      onClick={onOpen}
+      className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
+    >
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="truncate font-mono text-[12.5px] font-medium text-primary">
+          {request.uiTask.ticketId} · {request.uiTask.title}
+        </span>
+        {request.resolved && <Icon name="check" size={13} className="shrink-0 text-done" />}
+      </div>
+      <p className="line-clamp-3 flex-1 text-[13.5px] leading-relaxed text-ink2">{previewText(request.note, 160)}</p>
+      <div className="mt-2.5 flex items-center gap-2 text-[12px] text-ink3">
+        {request.apiDesign && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-panel2 px-1.5 py-0.5">
+            <Icon name="sheet" size={10} />
+            API design
+          </span>
+        )}
+        <span className="truncate">
+          {request.createdBy.name} · {formatDate(request.createdAt)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function RequestDetailModal({
   request,
+  onClose,
   onUpdate,
   onDelete,
 }: {
   request: BeTicketRequest;
-  onUpdate: (id: string, changes: { note: string; apiDesign: string | null; resolved: boolean }) => void;
-  onDelete: (id: string) => void;
+  onClose: () => void;
+  onUpdate: (changes: { note: string; apiDesign: string | null; resolved: boolean }) => void;
+  onDelete: () => void;
 }) {
+  const { epicId } = useParams<{ epicId: string }>();
   const [editingNote, setEditingNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(request.note);
   const [editingDesign, setEditingDesign] = useState(false);
   const [designDraft, setDesignDraft] = useState(request.apiDesign ?? '');
-  const { epicId } = useParams<{ epicId: string }>();
 
   function saveNote() {
     setEditingNote(false);
     if (noteDraft.trim() && noteDraft !== request.note) {
-      onUpdate(request.id, { note: noteDraft.trim(), apiDesign: request.apiDesign, resolved: request.resolved });
+      onUpdate({ note: noteDraft.trim(), apiDesign: request.apiDesign, resolved: request.resolved });
     }
   }
 
@@ -43,40 +74,47 @@ function RequestRow({
     setEditingDesign(false);
     const trimmed = designDraft.trim();
     if (trimmed !== (request.apiDesign ?? '')) {
-      onUpdate(request.id, { note: request.note, apiDesign: trimmed || null, resolved: request.resolved });
+      onUpdate({ note: request.note, apiDesign: trimmed || null, resolved: request.resolved });
     }
   }
 
   return (
-    <div className="border-b border-line2 p-4 last:border-b-0">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <Modal
+      open
+      onClose={onClose}
+      title="BE-ticket request"
+      width={620}
+      footer={
+        <>
+          <Button variant="danger" onClick={onDelete} className="mr-auto">
+            Delete
+          </Button>
+          <Button
+            onClick={() => onUpdate({ note: request.note, apiDesign: request.apiDesign, resolved: !request.resolved })}
+            className={request.resolved ? '' : 'text-done'}
+          >
+            {request.resolved ? 'Reopen' : 'Resolve'}
+          </Button>
+        </>
+      }
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
         <Link
           to={`/epics/${epicId}/sheet?focus=${request.uiTask.id}`}
           className="font-mono text-[13px] font-medium text-primary hover:underline"
         >
           {request.uiTask.ticketId} · {request.uiTask.title}
         </Link>
-        <div className="flex items-center gap-1 text-[13px] text-ink2">
-          <button
-            onClick={() => onUpdate(request.id, { note: request.note, apiDesign: request.apiDesign, resolved: !request.resolved })}
-            className={`flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-primary-soft hover:text-primary ${
-              request.resolved ? '' : 'text-done'
-            }`}
-          >
-            <Icon name="check" size={12} />
-            {request.resolved ? 'Reopen' : 'Resolve'}
-          </button>
-          <button onClick={() => onDelete(request.id)} className="flex items-center gap-1 rounded-sm px-2 py-1 hover:bg-danger-soft hover:text-danger">
-            <Icon name="trash" size={12} />
-            Delete
-          </button>
-        </div>
+        <span className="text-[12.5px] text-ink3">
+          {request.createdBy.name} · {formatDate(request.createdAt)}
+          {request.resolved && request.resolvedAt && <> · resolved {formatDate(request.resolvedAt)}</>}
+        </span>
       </div>
 
       {editingNote ? (
         <textarea
           autoFocus
-          className="h-20 w-full resize-none rounded-sm border border-line p-2 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+          className="h-24 w-full resize-none rounded-sm border border-line p-2 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
           value={noteDraft}
           onChange={(e) => setNoteDraft(e.target.value)}
           onBlur={saveNote}
@@ -99,7 +137,7 @@ function RequestRow({
         </div>
       )}
 
-      <div className="mt-2.5">
+      <div className="mt-3">
         <div className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink3">API design (markdown supported)</div>
         {editingDesign ? (
           <textarea
@@ -138,12 +176,7 @@ function RequestRow({
           </button>
         )}
       </div>
-
-      <div className="mt-2.5 text-[12.5px] text-ink3">
-        {request.createdBy.name} · {formatDate(request.createdAt)}
-        {request.resolved && request.resolvedAt && <> · resolved {formatDate(request.resolvedAt)}</>}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -162,6 +195,7 @@ export function BeRequestsPage() {
   const [uiTaskId, setUiTaskId] = useState('');
   const [note, setNote] = useState('');
   const [apiDesign, setApiDesign] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const uiTaskOptions = useMemo(
     () => (tasks ?? []).filter((t) => t.type === 'UI').map((t) => ({ id: t.id, label: `${t.ticketId} · ${t.title}` })),
@@ -170,6 +204,7 @@ export function BeRequestsPage() {
 
   const open = requests?.filter((r) => !r.resolved) ?? [];
   const resolved = requests?.filter((r) => r.resolved) ?? [];
+  const openRequest = requests?.find((r) => r.id === openId) ?? null;
 
   async function handleUpdate(id: string, changes: { note: string; apiDesign: string | null; resolved: boolean }) {
     try {
@@ -182,6 +217,7 @@ export function BeRequestsPage() {
   async function handleDelete(id: string) {
     try {
       await deleteRequest.mutateAsync(id);
+      setOpenId(null);
       toast.show('Request deleted', 'success');
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not delete request', 'error');
@@ -205,34 +241,38 @@ export function BeRequestsPage() {
 
   return (
     <div>
-      <Topbar title="BE Requests" subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined} />
-
-      <div className="max-w-[760px]">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-ink3">Open ({open.length})</h3>
+      <Topbar
+        title="BE Requests"
+        subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined}
+        right={
           <Button variant="primary" onClick={() => setModalOpen(true)} className="inline-flex items-center gap-1.5">
             <Icon name="plus" size={14} />
             New request
           </Button>
-        </div>
-        <div className="mb-6 rounded-lg border border-line bg-panel shadow-card">
-          {open.length === 0 && <p className="p-6 text-center text-[14.5px] text-ink2">No open BE-ticket requests.</p>}
+        }
+      />
+
+      <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink3">Open ({open.length})</h3>
+      {open.length === 0 ? (
+        <p className="mb-6 text-[14.5px] text-ink2">No open BE-ticket requests.</p>
+      ) : (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {open.map((r) => (
-            <RequestRow key={r.id} request={r} onUpdate={handleUpdate} onDelete={handleDelete} />
+            <RequestCard key={r.id} request={r} onOpen={() => setOpenId(r.id)} />
           ))}
         </div>
+      )}
 
-        {resolved.length > 0 && (
-          <>
-            <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink3">Resolved ({resolved.length})</h3>
-            <div className="rounded-lg border border-line bg-panel opacity-70 shadow-card">
-              {resolved.map((r) => (
-                <RequestRow key={r.id} request={r} onUpdate={handleUpdate} onDelete={handleDelete} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      {resolved.length > 0 && (
+        <>
+          <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-ink3">Resolved ({resolved.length})</h3>
+          <div className="grid grid-cols-1 gap-3 opacity-70 sm:grid-cols-2 xl:grid-cols-3">
+            {resolved.map((r) => (
+              <RequestCard key={r.id} request={r} onOpen={() => setOpenId(r.id)} />
+            ))}
+          </div>
+        </>
+      )}
 
       <Modal
         open={modalOpen}
@@ -281,6 +321,15 @@ export function BeRequestsPage() {
           </div>
         </div>
       </Modal>
+
+      {openRequest && (
+        <RequestDetailModal
+          request={openRequest}
+          onClose={() => setOpenId(null)}
+          onUpdate={(changes) => handleUpdate(openRequest.id, changes)}
+          onDelete={() => handleDelete(openRequest.id)}
+        />
+      )}
     </div>
   );
 }
