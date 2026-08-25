@@ -160,7 +160,11 @@ field, follow the existing optimistic-update + rollback-on-error pattern rather 
 `/login`/`/signup` are wrapped in `RequireAuth` + `AppLayout`). `src/components/ui/` holds small
 hand-rolled primitives (Button, Input, Select, Modal, Badge, Avatar) — there is no shadcn/ui or other
 component library installed despite the original spec suggesting one; extend these rather than adding a
-new UI dependency. `src/lib/scheduling.ts` is pure date-math with no UI/React dependency — the Gantt
+new UI dependency. The one exception is content rendering: any field whose label/placeholder says
+"markdown supported" (epic Notes content, Meeting agenda/minutes, BE-request note + API design) renders
+through `components/ui/Markdown.tsx` (`react-markdown` + `remark-gfm`) rather than a plain
+`whitespace-pre-wrap` div — reuse that component for any new long-form text field rather than adding
+another markdown renderer or hand-rolling formatting. `src/lib/scheduling.ts` is pure date-math with no UI/React dependency — the Gantt
 rendering component (`components/timeline/TimelineGrid.tsx`) consumes its output but the scheduling logic
 itself is unit-testable in isolation if tests are ever added.
 

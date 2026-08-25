@@ -1,5 +1,32 @@
 # Feature log
 
+## Notes redesign + markdown rendering — 2026-08-25
+- **Plan**: inline requirement (conversation-driven, no plan file).
+- **Summary**: Redesigned the epic Notes page (`NotesPage.tsx`) — "Add note" moved into the topbar so it's
+  reachable without scrolling, notes sorted by last-updated (newest/edited-first) with an "edited" marker,
+  N separate shadow-cards collapsed into one bordered panel with thin dividers, and the note list scrolls
+  within a bounded region instead of growing the page unboundedly. Also added real markdown rendering
+  (new `components/ui/Markdown.tsx`, `react-markdown` + `remark-gfm`) since several fields already claimed
+  "markdown supported" but only rendered raw text — wired into Notes content, Meeting agenda/minutes, and
+  BE-request note + API design fields, with labels/placeholders corrected to match.
+- **Touched**: `frontend/src/pages/NotesPage.tsx`, `MeetingsPage.tsx`, `BeRequestsPage.tsx`;
+  new `frontend/src/components/ui/Markdown.tsx`; `frontend/package.json` (added `react-markdown`,
+  `remark-gfm`).
+- **Notes**: `react-markdown` renders to React elements (no `dangerouslySetInnerHTML`, no `rehype-raw`), and
+  its default `urlTransform` strips non-http(s)/mailto/irc schemes from links/images, so this is safe by
+  default against script injection in user-authored notes. UI verification ran against an isolated
+  `docker compose -p kstasks-verify` stack (fresh DB, `SPRING_PROFILES_ACTIVE=seed`, ports 5434/8081/5181)
+  built from the same Dockerfiles as the real stack, rather than the main `ks_tasks-*` stack — the real DB
+  already has non-demo user accounts and no known credentials for them. The isolated stack was torn down
+  (`docker compose -p kstasks-verify down -v`) after verification; the main stack was rebuilt via
+  `docker compose up -d --build` as requested and left running. Pre-existing, unrelated to this change: the
+  app-wide fixed settings-gear button visually overlaps any Topbar `right`-slot action button at this
+  viewport width (confirmed identical on `DocumentsPage`'s "Upload document" button) — not fixed here since
+  out of scope. Backend `./mvnw test` output could not be captured in this environment (the Windows
+  `mvnw.cmd` wrapper's stdout isn't visible through this session's shell tool even though `docker compose
+  up -d --build` — which runs the same Maven build inside the container — succeeded and surefire reports
+  didn't need to regenerate since no backend files changed).
+
 ## Epic Documents (upload/download/rename/delete) — 2026-08-21
 - **Plan**: `plans/epic-documents-plan.md`
 - **Summary**: Added a dedicated Documents tab per epic for uploading, downloading, renaming, and deleting

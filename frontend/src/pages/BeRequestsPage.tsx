@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
+import { Markdown } from '../components/ui/Markdown';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { BeTicketRequest } from '../types';
@@ -92,18 +93,18 @@ function RequestRow({
             setNoteDraft(request.note);
             setEditingNote(true);
           }}
-          className="cursor-text whitespace-pre-wrap rounded-sm px-1 py-1 text-[14.5px] hover:bg-panel2"
+          className="cursor-text rounded-sm px-1 py-1 hover:bg-panel2"
         >
-          {request.note}
+          <Markdown content={request.note} />
         </div>
       )}
 
       <div className="mt-2.5">
-        <div className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink3">API design</div>
+        <div className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink3">API design (markdown supported)</div>
         {editingDesign ? (
           <textarea
             autoFocus
-            placeholder="Endpoint, request/response shape, edge cases…"
+            placeholder="Endpoint, request/response shape, edge cases… (markdown supported)"
             className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             value={designDraft}
             onChange={(e) => setDesignDraft(e.target.value)}
@@ -121,9 +122,9 @@ function RequestRow({
               setDesignDraft(request.apiDesign ?? '');
               setEditingDesign(true);
             }}
-            className="cursor-text whitespace-pre-wrap rounded-sm bg-panel2 p-2 font-mono text-[13px] text-ink hover:bg-primary-soft"
+            className="cursor-text rounded-sm bg-panel2 p-2 hover:bg-primary-soft"
           >
-            {request.apiDesign}
+            <Markdown content={request.apiDesign} className="text-[13.5px]" />
           </div>
         ) : (
           <button
@@ -260,7 +261,7 @@ export function BeRequestsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-ink2">Note</label>
+            <label className="mb-1 block text-[13px] font-medium text-ink2">Note (markdown supported)</label>
             <textarea
               autoFocus
               placeholder="What BE ticket will this need?"
@@ -270,7 +271,7 @@ export function BeRequestsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-ink2">API design (optional)</label>
+            <label className="mb-1 block text-[13px] font-medium text-ink2">API design (optional, markdown supported)</label>
             <textarea
               placeholder="Endpoint, request/response shape, edge cases…"
               className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2.5 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"

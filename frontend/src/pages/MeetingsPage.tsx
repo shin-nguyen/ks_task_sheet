@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { Markdown } from '../components/ui/Markdown';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { EpicMeeting } from '../types';
@@ -116,7 +117,7 @@ function MeetingModal({
           />
         </div>
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-ink2">Agenda (optional)</label>
+          <label className="mb-1 block text-[13px] font-medium text-ink2">Agenda (optional, markdown supported)</label>
           <textarea
             placeholder="What to discuss…"
             className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
@@ -125,7 +126,7 @@ function MeetingModal({
           />
         </div>
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-ink2">Minutes (optional)</label>
+          <label className="mb-1 block text-[13px] font-medium text-ink2">Minutes (optional, markdown supported)</label>
           <textarea
             placeholder="What was discussed / decided…"
             className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
@@ -168,14 +169,14 @@ function MeetingCard({ meeting, onEdit, onDelete }: { meeting: EpicMeeting; onEd
       {meeting.agenda && (
         <div className="mt-1.5">
           <div className="text-[12px] font-semibold uppercase tracking-wide text-ink3">Agenda</div>
-          <div className="whitespace-pre-wrap text-[14px] text-ink">{meeting.agenda}</div>
+          <Markdown content={meeting.agenda} className="text-[14px]" />
         </div>
       )}
 
       {meeting.minutes && (
         <div className="mt-1.5">
           <div className="text-[12px] font-semibold uppercase tracking-wide text-ink3">Minutes</div>
-          <div className="whitespace-pre-wrap text-[14px] text-ink">{meeting.minutes}</div>
+          <Markdown content={meeting.minutes} className="text-[14px]" />
         </div>
       )}
     </div>
