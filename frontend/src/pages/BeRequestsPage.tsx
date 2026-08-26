@@ -9,6 +9,7 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { Markdown } from '../components/ui/Markdown';
+import { MarkdownEditor } from '../components/ui/MarkdownEditor';
 import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
@@ -112,11 +113,12 @@ function RequestDetailModal({
       </div>
 
       {editingNote ? (
-        <textarea
+        <MarkdownEditor
           autoFocus
-          className="h-24 w-full resize-none rounded-sm border border-line p-2 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+          showPreviewToggle={false}
+          minHeightClass="min-h-[120px]"
           value={noteDraft}
-          onChange={(e) => setNoteDraft(e.target.value)}
+          onChange={setNoteDraft}
           onBlur={saveNote}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -140,12 +142,14 @@ function RequestDetailModal({
       <div className="mt-3">
         <div className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-ink3">API design (markdown supported)</div>
         {editingDesign ? (
-          <textarea
+          <MarkdownEditor
             autoFocus
+            mono
+            showPreviewToggle={false}
+            minHeightClass="min-h-[160px]"
             placeholder="Endpoint, request/response shape, edge cases… (markdown supported)"
-            className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             value={designDraft}
-            onChange={(e) => setDesignDraft(e.target.value)}
+            onChange={setDesignDraft}
             onBlur={saveDesign}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
@@ -302,21 +306,22 @@ export function BeRequestsPage() {
           </div>
           <div>
             <label className="mb-1 block text-[13px] font-medium text-ink2">Note (markdown supported)</label>
-            <textarea
+            <MarkdownEditor
               autoFocus
+              minHeightClass="min-h-[110px]"
               placeholder="What BE ticket will this need?"
-              className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={setNote}
             />
           </div>
           <div>
             <label className="mb-1 block text-[13px] font-medium text-ink2">API design (optional, markdown supported)</label>
-            <textarea
+            <MarkdownEditor
+              mono
+              minHeightClass="min-h-[160px]"
               placeholder="Endpoint, request/response shape, edge cases…"
-              className="h-32 w-full resize-none rounded-sm border border-line bg-panel2 p-2.5 font-mono text-[13px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
               value={apiDesign}
-              onChange={(e) => setApiDesign(e.target.value)}
+              onChange={setApiDesign}
             />
           </div>
         </div>

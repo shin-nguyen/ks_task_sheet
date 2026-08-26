@@ -8,6 +8,7 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Markdown } from '../components/ui/Markdown';
+import { MarkdownEditor } from '../components/ui/MarkdownEditor';
 import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
@@ -119,20 +120,20 @@ function MeetingModal({
         </div>
         <div>
           <label className="mb-1 block text-[13px] font-medium text-ink2">Agenda (optional, markdown supported)</label>
-          <textarea
+          <MarkdownEditor
             placeholder="What to discuss…"
-            className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+            minHeightClass="min-h-[140px]"
             value={form.agenda}
-            onChange={(e) => setForm((f) => ({ ...f, agenda: e.target.value }))}
+            onChange={(agenda) => setForm((f) => ({ ...f, agenda }))}
           />
         </div>
         <div>
           <label className="mb-1 block text-[13px] font-medium text-ink2">Minutes (optional, markdown supported)</label>
-          <textarea
+          <MarkdownEditor
             placeholder="What was discussed / decided…"
-            className="h-20 w-full resize-none rounded-sm border border-line p-2.5 text-[14.5px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+            minHeightClass="min-h-[140px]"
             value={form.minutes}
-            onChange={(e) => setForm((f) => ({ ...f, minutes: e.target.value }))}
+            onChange={(minutes) => setForm((f) => ({ ...f, minutes }))}
           />
         </div>
       </div>

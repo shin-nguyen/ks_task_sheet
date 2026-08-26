@@ -1,5 +1,21 @@
 # Feature log
 
+## Markdown editor for Notes/Meetings/BE Requests — 2026-08-26
+- **Plan**: inline requirement (Vietnamese: markdown textboxes for Notes/Meetings/BE Requests were too
+  small, gave no feedback on what had been typed, and had no way to format plain text into markdown).
+- **Summary**: Added a shared `MarkdownEditor` component (formatting toolbar — bold, italic, heading,
+  quote, code, bullet/numbered list, link — plus a Write/Preview tab that renders through the existing
+  `Markdown` component) and swapped it in for every plain `<textarea>` behind a "markdown supported" label:
+  Notes composer + edit, Meeting agenda/minutes, and BE-request note + API design (both the create modal
+  and the click-to-edit detail fields). Textareas are also taller by default and vertically resizable
+  (`resize-y`) instead of fixed-height, so users can see more of what they've typed.
+- **Touched**: `frontend/src/components/ui/MarkdownEditor.tsx` (new); `pages/NotesPage.tsx`,
+  `pages/MeetingsPage.tsx`, `pages/BeRequestsPage.tsx`.
+- **Notes**: The BE-requests detail modal's inline note/API-design fields use `showPreviewToggle={false}`
+  (toolbar only, no Write/Preview tabs) because that flow saves on textarea blur — a Preview-tab click
+  would unmount the textarea and fire the save-and-exit-edit-mode handler. Toolbar buttons everywhere use
+  `onMouseDown` preventDefault so clicking them doesn't blur/lose the current selection.
+
 ## Move per-epic notify config into admin Settings — 2026-08-26
 - **Plan**: inline requirement (follow-up to Auto Notify below).
 - **Summary**: The per-epic Notify page was already admin-only but lived in the per-epic sidebar nav

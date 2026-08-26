@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Markdown } from '../components/ui/Markdown';
+import { MarkdownEditor } from '../components/ui/MarkdownEditor';
 import { previewText } from '../lib/textPreview';
 import type { EpicNote } from '../types';
 
@@ -66,12 +67,12 @@ function NewNoteModal({ open, onClose, onCreate }: { open: boolean; onClose: () 
         </>
       }
     >
-      <textarea
+      <MarkdownEditor
         autoFocus
         placeholder="Write a note (markdown supported)…"
-        className="h-40 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+        minHeightClass="min-h-[200px]"
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={setDraft}
         onKeyDown={(e) => handleComposerKeyDown(e, submit, onClose)}
       />
     </Modal>
@@ -143,11 +144,11 @@ function NoteDetailModal({
         {edited && <span className="text-ink3">· edited</span>}
       </div>
       {editing ? (
-        <textarea
+        <MarkdownEditor
           autoFocus
-          className="h-56 w-full resize-none rounded-sm border border-line p-2.5 text-[15px] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+          minHeightClass="min-h-[260px]"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={setDraft}
           onKeyDown={(e) => handleComposerKeyDown(e, save, () => setEditing(false))}
         />
       ) : (
