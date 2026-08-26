@@ -1,5 +1,20 @@
 # Feature log
 
+## Move per-epic notify config into admin Settings — 2026-08-26
+- **Plan**: inline requirement (follow-up to Auto Notify below).
+- **Summary**: The per-epic Notify page was already admin-only but lived in the per-epic sidebar nav
+  alongside Sheet/Timeline/etc., which read oddly for an admin-only config screen. Moved it into the
+  existing admin-only Settings > Notifications tab: that page now shows the global master toggle plus an
+  epic picker, and selecting an epic renders the same room/meeting-reminder/daily-report/git-merge form
+  inline below the picker. Removed the standalone `/epics/:epicId/notify` route and the "Notify" sidebar
+  item entirely — all notify configuration (global and per-epic) now lives in one consolidated admin page.
+- **Touched**: `frontend/src/pages/NotifySettingsPage.tsx` (new, replaces `NotifyConfigPage.tsx` +
+  `NotifyGlobalSettingsPage.tsx`, both deleted); `App.tsx` (route removed/renamed); `Sidebar.tsx` (nav item
+  removed). No backend changes — admin-only enforcement was already at the API layer.
+- **Notes**: Verified against the rebuilt Docker stack as a throwaway admin account: the merged page shows
+  the global toggle and an epic dropdown; selecting an epic loads its (unconfigured) notify form inline;
+  the old per-epic route now falls through to the catch-all redirect. Test user removed afterward.
+
 ## Auto Notify (Rocket.Chat) — 2026-08-26
 - **Plan**: `plans/auto-notify-plan.md`.
 - **Summary**: Replaced the two manual PowerShell scripts under `samples/` with a first-class per-epic

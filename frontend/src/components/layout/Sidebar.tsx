@@ -15,13 +15,12 @@ const NAV_ITEMS = [
   { key: 'be-requests', label: 'BE Requests', icon: 'flag' as const },
   { key: 'meetings', label: 'Meetings', icon: 'clock' as const },
   { key: 'members', label: 'Members', icon: 'members' as const },
-  { key: 'notify', label: 'Notify', icon: 'bell' as const },
 ];
 
 export function Sidebar() {
   const { epicId } = useParams();
   const { data: epics } = useEpics();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [pickerOpen, setPickerOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -90,7 +89,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {NAV_ITEMS.filter((item) => item.key !== 'notify' || isAdmin).map((item) => (
+      {NAV_ITEMS.map((item) => (
         <NavLink
           key={item.key}
           to={epicId ? `/epics/${epicId}/${item.key}` : '/epics'}
