@@ -1,232 +1,124 @@
 # Feature log
 
-## All members see all epics, with self-join/self-leave — 2026-08-26
-- **Plan**: inline requirement (Vietnamese: all members should see all epics and be able to join one
-  themselves if needed).
-- **Summary**: `GET /api/v1/epics` now returns every epic to every authenticated user (was
-  membership-filtered for non-admins), with a new `isMember` flag per epic so the frontend can tell members
-  and non-members apart. Added self-service `POST /api/v1/epics/{epicId}/members/me` (join) and
-  `DELETE .../members/me` (leave) endpoints. `EpicsListPage` shows a "Join epic" button on cards the current
-  user isn't a member of instead of opening them directly (admins still bypass, matching
-  `EpicAccessService`'s existing all-access rule); `EpicMembersPage` copy was updated and gained a
-  self-service "Leave" action next to the signed-in user's own row. While implementing, tightened
-  `EpicMemberController.add`/`remove` to admin-only (`requireAdmin()` checks) as requested — though it
-  turned out `SecurityConfig` already enforced `POST/DELETE .../members[/*]` as admin-only at the filter-chain
-  level, so the controller checks are defense-in-depth, not a new restriction. That same `SecurityConfig`
-  wildcard rule (`DELETE /api/v1/epics/*/members/*` → `hasRole("ADMIN")`) initially caught the new
-  self-leave endpoint too; fixed by adding a more specific `DELETE .../members/me` → `authenticated()` rule
-  ahead of it.
-- **Touched**: `backend/.../epic/{EpicService,EpicController,EpicMemberController,EpicRepository}.java`,
-  `backend/.../epic/dto/EpicResponse.java`, `backend/.../config/SecurityConfig.java`,
-  `frontend/src/types/index.ts`, `frontend/src/hooks/useEpicMembers.ts`,
-  `frontend/src/pages/{EpicsListPage,EpicMembersPage}.tsx`.
-- **Notes**: Verified against the real Docker stack (rebuilt containers, not dev servers) using a
-  throwaway signup account for the member path and a throwaway SQL-promoted account for the admin-bypass
-  path; both were deleted afterward. `EpicController.delete` (delete-epic) is *not* an unguarded gap as
-  earlier assumed — `SecurityConfig` already restricts it to admins at the filter-chain level, same
-  pattern as the members endpoints.
+Organized by feature area, not chronologically — **one section per feature**. When you touch a feature
+again, update its existing section in place (revise Summary/Gotchas/Files to reflect current state) instead
+of appending a new dated entry. Only add a new section when the work doesn't belong to any existing one.
+Keep each section factual and reuse-oriented: what the feature is, non-obvious decisions, and real gotchas
+found by testing — not a step-by-step narration of how each change was verified.
 
-## Rendered markdown card previews for Notes/Meetings/BE Requests — 2026-08-26
-- **Plan**: inline requirement (Vietnamese: card previews on Notes/Meetings/BE Requests looked ugly —
-  even though the content is markdown, the preview just showed flattened plain text with no line breaks,
-  hard to read).
-- **Summary**: The grid-card previews on Notes, Meetings, and BE Requests used `previewText()`
-  (`lib/textPreview.ts`), which stripped markdown syntax and collapsed all newlines into a single flat
-  line. Replaced it with a new `MarkdownPreview` component (`components/ui/Markdown.tsx`) that renders the
-  actual markdown through a new `compact` mode of the existing `Markdown` component (headings collapse to
-  bold text, tighter list/paragraph spacing, links/images inert since previews sit inside a clickable
-  card) inside a fixed-height, `overflow-hidden` wrapper with a bottom fade mask (`.md-preview-fade` in
-  `index.css`) instead of a hard cutoff. Since previews now render real block markup (paragraphs, lists),
-  the three card components (`NotesPage`'s note card, `MeetingsPage`'s `MeetingCard`,
-  `BeRequestsPage`'s `RequestCard`) switched from a `<button>` wrapper to the `role="button"` +
-  `tabIndex={0}` + `onClick`/`onKeyDown` div pattern already used by `TodosPage`'s `TodoCard`, since
-  `<button>` can't validly contain block-level children. `lib/textPreview.ts` was deleted as fully unused.
-- **Touched**: `frontend/src/components/ui/Markdown.tsx`, `frontend/src/index.css`,
-  `frontend/src/pages/NotesPage.tsx`, `frontend/src/pages/MeetingsPage.tsx`,
-  `frontend/src/pages/BeRequestsPage.tsx`; removed `frontend/src/lib/textPreview.ts`.
+## Epics: universal visibility + self-join/self-leave
+*(Last updated 2026-08-26)*
+- **What it is**: Every authenticated user can see every epic on `/epics` (previously non-admins only saw
+  epics they were a member of). Members join/leave epics themselves instead of only an admin adding/removing
+  them.
+- **Backend**: `GET /api/v1/epics` returns all epics to all users, with a per-epic `isMember` boolean
+  (`EpicResponse`) so the frontend can distinguish member vs non-member. Self-service endpoints:
+  `POST /api/v1/epics/{epicId}/members/me` (join), `DELETE /api/v1/epics/{epicId}/members/me` (leave) — both
+  `authenticated()`, not admin-gated. `EpicMemberController.add`/`remove` (admin adding/removing *other*
+  users) stay admin-only, enforced both in the controller (`requireAdmin()`) and in `SecurityConfig` at the
+  filter-chain level (`POST/DELETE .../members[/*]` → `hasRole("ADMIN")`) — defense-in-depth, not new.
+- **Gotcha**: `SecurityConfig`'s wildcard `DELETE /api/v1/epics/*/members/*` rule also matched the new
+  `.../members/me` path. Fixed by adding the more specific `.../members/me` → `authenticated()` rule *ahead
+  of* the wildcard rule — Spring Security matches rules in declaration order.
+- **Frontend**: `EpicsListPage` shows a "Join epic" button (instead of opening the epic) on cards the
+  current user isn't a member of; admins bypass this and open directly, matching `EpicAccessService`'s
+  existing all-access rule. `EpicMembersPage` has a self-service "Leave" action next to the signed-in user's
+  own row.
+- **Files**: `backend/.../epic/{EpicService,EpicController,EpicMemberController,EpicRepository}.java`,
+  `epic/dto/EpicResponse.java`, `config/SecurityConfig.java`; `frontend/src/types/index.ts`,
+  `hooks/useEpicMembers.ts`, `pages/{EpicsListPage,EpicMembersPage}.tsx`.
 
-## Markdown editor for Notes/Meetings/BE Requests — 2026-08-26
-- **Plan**: inline requirement (Vietnamese: markdown textboxes for Notes/Meetings/BE Requests were too
-  small, gave no feedback on what had been typed, and had no way to format plain text into markdown).
-- **Summary**: Added a shared `MarkdownEditor` component (formatting toolbar — bold, italic, heading,
-  quote, code, bullet/numbered list, link — plus a Write/Preview tab that renders through the existing
-  `Markdown` component) and swapped it in for every plain `<textarea>` behind a "markdown supported" label:
-  Notes composer + edit, Meeting agenda/minutes, and BE-request note + API design (both the create modal
-  and the click-to-edit detail fields). Textareas are also taller by default and vertically resizable
-  (`resize-y`) instead of fixed-height, so users can see more of what they've typed.
-- **Touched**: `frontend/src/components/ui/MarkdownEditor.tsx` (new); `pages/NotesPage.tsx`,
-  `pages/MeetingsPage.tsx`, `pages/BeRequestsPage.tsx`.
-- **Notes**: The BE-requests detail modal's inline note/API-design fields use `showPreviewToggle={false}`
-  (toolbar only, no Write/Preview tabs) because that flow saves on textarea blur — a Preview-tab click
-  would unmount the textarea and fire the save-and-exit-edit-mode handler. Toolbar buttons everywhere use
-  `onMouseDown` preventDefault so clicking them doesn't blur/lose the current selection.
+## Notes / Todos / BE-Ticket Requests / Meetings pages
+*(Last updated 2026-08-26)*
+- **What it is**: Four epic-scoped collaboration pages — free-form Notes, lightweight Todos, a Pending
+  BE-Ticket Requests backlog, and Meeting scheduling/minutes. They share layout and markdown conventions and
+  tend to get built out/polished together.
+- **Backend**: `todo` (title/assignee/due date/done), `berequest` (`BeTicketRequest`: note + optional
+  `apiDesign`, references a UI task, open/resolved lifecycle with `resolvedAt`), `meeting`
+  (title/`scheduledAt`/link/agenda/minutes) — each a package mirroring `note`'s CRUD shape. Migrations:
+  `V6__epic_todos.sql`, `V7__be_ticket_requests.sql`, `V8__epic_meetings.sql`,
+  `V9__be_ticket_request_api_design.sql` (added the `apiDesign` column after the fact).
+- **Layout**: All four render as a responsive grid of compact preview cards (`grid-cols-1 sm:grid-cols-2
+  xl:grid-cols-3`, Todos up to `xl:grid-cols-4`) rather than full-content stacked cards — clicking a card
+  opens a detail modal with the full content (`NoteDetailModal`, `TodoDetailModal`, `MeetingDetailModal`,
+  `RequestDetailModal`). "New note"/"New meeting"/"New request" live in the `Topbar` right slot; Todos keeps
+  an inline quick-add row above the grid instead (typing a title directly is faster than a modal round-trip
+  for that page). Sheet page supports a `?focus=<taskId>` deep link (scrolls to + highlights a row), used by
+  BE-request cards to jump to their linked UI task. Todos has an explicit "Resolve"/"Reopen" button next to
+  Delete, syncing the same `done` state as the row checkbox.
+- **Markdown**: Any field labeled "markdown supported" (Notes content, Meeting agenda/minutes, BE-request
+  note + API design) renders through `components/ui/Markdown.tsx` (`react-markdown` + `remark-gfm` — renders
+  to React elements, no `dangerouslySetInnerHTML`/`rehype-raw`, default `urlTransform` strips
+  non-http(s)/mailto/irc link schemes — safe by default against script injection in user-authored content).
+  Editing goes through `components/ui/MarkdownEditor.tsx` (bold/italic/heading/quote/code/list/link toolbar +
+  Write/Preview tabs over the same `Markdown` renderer, taller `resize-y` textareas). **Card-grid previews**
+  render through a `compact` mode of `Markdown` plus a `MarkdownPreview` wrapper (headings collapse to bold
+  text, tighter spacing, inert links/images, fixed-height `overflow-hidden` container with a bottom fade mask
+  via `.md-preview-fade` in `index.css`) instead of a flattened-plain-text truncation — the old
+  `lib/textPreview.ts` helper was deleted, no longer exists. Because previews now render real block markup,
+  the note/meeting/request cards are `role="button"`+`tabIndex`+`onClick`/`onKeyDown` divs (matching
+  `TodosPage`'s `TodoCard`), not `<button>` (which can't validly contain block-level children).
+- **Gotchas**:
+  - BE-Requests detail modal's inline note/API-design fields use `MarkdownEditor`'s
+    `showPreviewToggle={false}` (toolbar only) because that flow saves on textarea blur — a Preview-tab click
+    would unmount the textarea and fire the save-and-exit handler. Toolbar buttons everywhere use
+    `onMouseDown` preventDefault so clicking them doesn't blur/lose the current text selection.
+  - The app-wide fixed settings-gear button visually overlaps/steals clicks from any `Topbar` `right`-slot
+    button at some viewport widths (also seen on `DocumentsPage`'s "Upload document"). Known, not fixed, out
+    of scope every time it's come up — worth a real fix if touched again.
+- **Files**: `backend/.../{todo,berequest,meeting}/*`; `frontend/src/components/ui/{Markdown,
+  MarkdownEditor}.tsx`, `index.css` (`.md-preview-fade`); `frontend/src/pages/{NotesPage,TodosPage,
+  MeetingsPage,BeRequestsPage}.tsx`; `hooks/{useTodos,useBeRequests,useMeetings}.ts`.
 
-## Move per-epic notify config into admin Settings — 2026-08-26
-- **Plan**: inline requirement (follow-up to Auto Notify below).
-- **Summary**: The per-epic Notify page was already admin-only but lived in the per-epic sidebar nav
-  alongside Sheet/Timeline/etc., which read oddly for an admin-only config screen. Moved it into the
-  existing admin-only Settings > Notifications tab: that page now shows the global master toggle plus an
-  epic picker, and selecting an epic renders the same room/meeting-reminder/daily-report/git-merge form
-  inline below the picker. Removed the standalone `/epics/:epicId/notify` route and the "Notify" sidebar
-  item entirely — all notify configuration (global and per-epic) now lives in one consolidated admin page.
-- **Touched**: `frontend/src/pages/NotifySettingsPage.tsx` (new, replaces `NotifyConfigPage.tsx` +
-  `NotifyGlobalSettingsPage.tsx`, both deleted); `App.tsx` (route removed/renamed); `Sidebar.tsx` (nav item
-  removed). No backend changes — admin-only enforcement was already at the API layer.
-- **Notes**: Verified against the rebuilt Docker stack as a throwaway admin account: the merged page shows
-  the global toggle and an epic dropdown; selecting an epic loads its (unconfigured) notify form inline;
-  the old per-epic route now falls through to the catch-all redirect. Test user removed afterward.
+## Auto Notify (Rocket.Chat)
+*(Last updated 2026-08-26)*
+- **What it is**: Server-side, per-epic Rocket.Chat notifications — meeting reminders (15 min before
+  `EpicMeeting.scheduledAt`), daily BE/UI task-status-count reports, and git-merge notifications (polls a
+  shelled-out `git` clone, diffs against the last-seen commit SHA) — replacing two manual PowerShell scripts
+  that used to live under `samples/`. A system-wide admin master toggle sits above three
+  independently-toggleable per-epic flags. Runs on three independent 1-minute `@Scheduled` ticks
+  (`NotifyScheduler`, `@EnableScheduling`) — not something anyone has to remember to leave running.
+- **Config UI**: Lives entirely in the admin-only Settings > Notifications tab (`NotifySettingsPage.tsx`) —
+  global toggle plus an epic picker; picking an epic renders the room/meeting-reminder/daily-report/git-merge
+  form inline below the picker. There is no standalone per-epic `/epics/:epicId/notify` route or sidebar
+  "Notify" item anymore — moved here because an admin-only config screen didn't belong in the per-epic nav
+  alongside Sheet/Timeline/etc.
+- **Backend**: package `dev.kstasks.notify` — `EpicNotifyConfig`/`EpicNotifyState` (admin-edited vs.
+  scheduler-mutated, kept in separate tables so an admin save and a scheduler tick never contend on the same
+  row) / `NotifyGlobalSettings` entities, `NotifyConfigService`, `NotifyDispatchService`, `GitPollingService`,
+  `client/RocketChatClient`. Chat room name is resolved once via Rocket.Chat's `rooms.get` and cached, with
+  an explicit re-resolve action. `V12__notify.sql`; `EpicMeeting` gained `reminderSentAt`. Admin-only end to
+  end (`hasRole("ADMIN")` at the `SecurityConfig` filter-chain level, `RequireAdmin`-wrapped frontend routes)
+  — never exposed to non-admins even read-only.
+- **Gotchas (real bugs, found only by testing against the live stack, not by compile/lint)**:
+  - `RocketChatClient`'s `RestClient` had no connect/read timeout — an unreachable Rocket.Chat host hung the
+    request thread indefinitely. Fixed with an explicit 10s connect / 15s read timeout
+    (`SimpleClientHttpRequestFactory`).
+  - `GitPollingService` always attached an `Authorization: Bearer <token>` header even when
+    `GIT_ACCESS_TOKEN` was unset — an *empty* bearer token breaks `git clone`/`fetch` even against a fully
+    public repo. The header is now added via `-c http.extraHeader` only when the token is actually non-blank.
+  - Real Rocket.Chat send to the production host (`chat.tma.com.vn`) isn't reachable from the dev/CI
+    environment — only the failure path (timeout → error toast, config not persisted) can be verified there.
+- **Files**: `backend/.../notify/*`, `client/RocketChatClient`, `V12__notify.sql`,
+  `EpicMeeting`/`EpicMeetingRepository` (+`reminderSentAt`), `SecurityConfig`, `KsTasksApplication`
+  (`@EnableScheduling`), `application.yml`, `backend/Dockerfile` (+git), `.env.example`, `docker-compose.yml`
+  (+git-repos volume); `frontend/src/components/ui/Toggle.tsx`, `hooks/{useNotifyConfig,
+  useNotifyGlobalSettings}.ts`, `pages/NotifySettingsPage.tsx` (replaces the deleted `NotifyConfigPage.tsx`/
+  `NotifyGlobalSettingsPage.tsx`), `Sidebar.tsx`, `SettingsPage.tsx`, `App.tsx`, `types/index.ts`.
 
-## Auto Notify (Rocket.Chat) — 2026-08-26
-- **Plan**: `plans/auto-notify-plan.md`.
-- **Summary**: Replaced the two manual PowerShell scripts under `samples/` with a first-class per-epic
-  notify configuration: chat room name (resolved once via Rocket.Chat's `rooms.get` and cached, with an
-  explicit re-resolve action), and three independently-toggleable notification types — meeting reminders
-  (15 min before `EpicMeeting.scheduledAt`), daily BE/UI task-status-count reports, and git merge
-  notifications (server-side clone/fetch via shelled-out `git`, diffed against the last-seen commit SHA).
-  A system-wide admin master toggle sits on top of the per-epic flags. Everything runs server-side on three
-  independent 1-minute `@Scheduled` ticks instead of a script someone has to remember to leave running.
-  Admin-only end to end (hidden nav item/settings tab, `RequireAdmin`-wrapped routes, `hasRole("ADMIN")`
-  URL rules) — never exposed to non-admins even read-only.
-- **Touched**: new backend package `dev.kstasks.notify` (`EpicNotifyConfig`/`EpicNotifyState`/
-  `NotifyGlobalSettings` entities, `NotifyConfigService`, `NotifyDispatchService`, `GitPollingService`,
-  `NotifyScheduler`, `NotifyConfigController`, `NotifyGlobalSettingsController`,
-  `client/RocketChatClient`); `V12__notify.sql`; `EpicMeeting`/`EpicMeetingRepository` (+`reminderSentAt`);
-  `SecurityConfig`, `KsTasksApplication` (`@EnableScheduling`), `application.yml`, `backend/Dockerfile`
-  (+git), `.env.example`, `docker-compose.yml` (+git-repos volume). Frontend: `components/ui/Toggle.tsx`,
-  `hooks/useNotifyConfig.ts`, `hooks/useNotifyGlobalSettings.ts`, `pages/NotifyConfigPage.tsx`,
-  `pages/NotifyGlobalSettingsPage.tsx`, `Sidebar.tsx`, `SettingsPage.tsx`, `App.tsx`, `types/index.ts`.
-- **Notes**: Fixed two bugs found only by testing against the real stack (not caught by compile/lint):
-  `RocketChatClient`'s `RestClient` had no connect/read timeout, so an unreachable Rocket.Chat host hung
-  the request thread indefinitely — added a 10s/15s connect/read timeout. `GitPollingService` always
-  attached an `Authorization: Bearer <token>` header even when `GIT_ACCESS_TOKEN` is unset, and an empty
-  bearer token broke `git clone`/`fetch` even against fully public repos — the header is now omitted
-  entirely when no token is configured. Verified end-to-end against a rebuilt Docker stack: room-resolution
-  validation, meeting-reminder firing (once, `reminder_sent_at` set), daily-report firing (once/day,
-  weekday + time-of-day gating), git polling (first-poll baseline-only, then correct diff detection against
-  a real public repo), admin-only enforcement (backend 403s + frontend redirects) for a throwaway MEMBER
-  user, and global-settings toggle persistence across reload — all test users/epics/data removed afterward.
-  Real Rocket.Chat send (`chat.tma.com.vn`) could not be verified since that host isn't reachable from this
-  environment; the failure path (timeout → error toast, config not persisted) was verified instead.
-
-## Grid layout for Notes/Todos/Meetings/BE Requests — 2026-08-25
-- **Plan**: inline requirement (conversation-driven, no plan file).
-- **Summary**: Converted the single-column, full-height-card lists on `NotesPage`, `TodosPage`,
-  `MeetingsPage`, and `BeRequestsPage` to a responsive grid of compact preview cards (`grid grid-cols-1
-  sm:grid-cols-2 xl:grid-cols-3` for content cards, up to `xl:grid-cols-4` for the shorter Todo cards) —
-  the old layout capped at `max-w-[760px]` and left roughly half the screen empty on anything wider than a
-  laptop, and each card showed full content, so a handful of records already filled the viewport. Cards now
-  show a short preview (new `lib/textPreview.ts` — strips markdown syntax and truncates) with `line-clamp`,
-  and clicking a card opens a details modal with the full rendered content: `NoteDetailModal` (view +
-  inline edit + delete) and `TodoDetailModal` (title/assignee/due date + resolve/delete) are new; Meetings
-  reuses the existing create/edit `MeetingModal` and adds a new read-only `MeetingDetailModal`; BE Requests
-  keeps its existing click-to-edit-in-place note/API-design interaction but relocated it into a new
-  `RequestDetailModal` instead of an always-expanded row. "New note"/"New meeting"/"New request" actions
-  moved into the `Topbar` right slot for consistency (Todos keeps its inline quick-add row above the grid,
-  since typing a title directly is faster than a modal round-trip for that page).
-- **Touched**: `frontend/src/pages/{NotesPage,TodosPage,MeetingsPage,BeRequestsPage}.tsx` (full rewrites);
-  new `frontend/src/lib/textPreview.ts`.
-- **Notes**: Verified against a fully rebuilt Docker stack (`docker compose up -d --build`, then an
-  isolated `docker compose -p kstasks-verify` copy for the actual click-through, same reason as the prior
-  entry — no credentials for the real stack's non-demo users). Seeded several notes/todos/meetings/requests
-  via `fetch` from the browser console (authenticated as the demo user) to populate the grid, then clicked
-  through: card grid renders and uses full width, preview truncation reads cleanly, detail modals open/
-  close correctly, Notes edit-in-modal and Meetings edit-in-existing-modal both round-trip, BE Requests
-  Resolve moves a card from Open to the muted Resolved section live. Hit a transient Docker Hub registry
-  TLS-timeout during this session (unrelated to the code) that a Docker Desktop restart resolved — not a
-  project issue. The pre-existing settings-gear/Topbar-button overlap (noted in the previous entry) now
-  also affects the Meetings and BE Requests "New …" buttons since they moved into the Topbar — still
-  out of scope, not fixed here.
-
-## Notes redesign + markdown rendering — 2026-08-25
-- **Plan**: inline requirement (conversation-driven, no plan file).
-- **Summary**: Redesigned the epic Notes page (`NotesPage.tsx`) — "Add note" moved into the topbar so it's
-  reachable without scrolling, notes sorted by last-updated (newest/edited-first) with an "edited" marker,
-  N separate shadow-cards collapsed into one bordered panel with thin dividers, and the note list scrolls
-  within a bounded region instead of growing the page unboundedly. Also added real markdown rendering
-  (new `components/ui/Markdown.tsx`, `react-markdown` + `remark-gfm`) since several fields already claimed
-  "markdown supported" but only rendered raw text — wired into Notes content, Meeting agenda/minutes, and
-  BE-request note + API design fields, with labels/placeholders corrected to match.
-- **Touched**: `frontend/src/pages/NotesPage.tsx`, `MeetingsPage.tsx`, `BeRequestsPage.tsx`;
-  new `frontend/src/components/ui/Markdown.tsx`; `frontend/package.json` (added `react-markdown`,
-  `remark-gfm`).
-- **Notes**: `react-markdown` renders to React elements (no `dangerouslySetInnerHTML`, no `rehype-raw`), and
-  its default `urlTransform` strips non-http(s)/mailto/irc schemes from links/images, so this is safe by
-  default against script injection in user-authored notes. UI verification ran against an isolated
-  `docker compose -p kstasks-verify` stack (fresh DB, `SPRING_PROFILES_ACTIVE=seed`, ports 5434/8081/5181)
-  built from the same Dockerfiles as the real stack, rather than the main `ks_tasks-*` stack — the real DB
-  already has non-demo user accounts and no known credentials for them. The isolated stack was torn down
-  (`docker compose -p kstasks-verify down -v`) after verification; the main stack was rebuilt via
-  `docker compose up -d --build` as requested and left running. Pre-existing, unrelated to this change: the
-  app-wide fixed settings-gear button visually overlaps any Topbar `right`-slot action button at this
-  viewport width (confirmed identical on `DocumentsPage`'s "Upload document" button) — not fixed here since
-  out of scope. Backend `./mvnw test` output could not be captured in this environment (the Windows
-  `mvnw.cmd` wrapper's stdout isn't visible through this session's shell tool even though `docker compose
-  up -d --build` — which runs the same Maven build inside the container — succeeded and surefire reports
-  didn't need to regenerate since no backend files changed).
-
-## Epic Documents (upload/download/rename/delete) — 2026-08-21
-- **Plan**: `plans/epic-documents-plan.md`
-- **Summary**: Added a dedicated Documents tab per epic for uploading, downloading, renaming, and deleting
-  reference files (specs, design docs, exported files). New `dev.kstasks.document` backend package (mirrors
-  `note` exactly) backed by local-disk storage under a Docker named volume, with `V10__epic_documents.sql`.
-  Any epic member can view/download; only the uploader or an admin can rename/delete
-  (`DocumentController.getOwnedOrThrow`, a deliberate divergence from `NoteController`'s author-only check).
-  Max upload size bumped to 25MB.
-- **Touched**: `backend/.../document/{EpicDocument,EpicDocumentRepository,DocumentStorageService,
-  DocumentController}.java`, `document/dto/{DocumentResponse,RenameDocumentRequest}.java`,
-  `GlobalExceptionHandler` (new `MaxUploadSizeExceededException` → 413 `FILE_TOO_LARGE` handler),
-  `application.yml`, `backend/Dockerfile`, `docker-compose.yml`, `.env.example`, `backend/.gitignore`;
-  `frontend/src/hooks/useDocuments.ts`, `components/documents/UploadDocumentModal.tsx`,
+## Epic Documents (upload/download/rename/delete)
+*(Last updated 2026-08-21)*
+- **What it is**: A Documents tab per epic for uploading, downloading, renaming, and deleting reference
+  files (specs, design docs, exports). Backend package `dev.kstasks.document` mirrors `note` exactly, storing
+  files on local disk under a Docker named volume (`V10__epic_documents.sql`).
+- **Permissions**: Any epic member can view/download; only the uploader or an admin can rename/delete
+  (`DocumentController.getOwnedOrThrow`) — a deliberate divergence from `NoteController`'s author-only check.
+- **Gotcha**: Max upload size is 25MB app-side, but `frontend/nginx.conf`'s `/api/` proxy location needed an
+  explicit `client_max_body_size 26M` — the container nginx default of 1MB silently rejected larger uploads
+  through the deployed stack (a latent gap that also affected CSV import before this was found).
+- **Files**: `backend/.../document/{EpicDocument,EpicDocumentRepository,DocumentStorageService,
+  DocumentController}.java`, `document/dto/*`, `GlobalExceptionHandler` (`MaxUploadSizeExceededException` →
+  413 `FILE_TOO_LARGE`), `application.yml`, `backend/Dockerfile`, `docker-compose.yml`, `.env.example`,
+  `backend/.gitignore`; `frontend/src/hooks/useDocuments.ts`, `components/documents/UploadDocumentModal.tsx`,
   `pages/DocumentsPage.tsx`, `types/index.ts`, `lib/api.ts` (`getBlob`), `App.tsx`, `Sidebar.tsx`,
-  `components/ui/Icon.tsx` (`document`/`download` glyphs).
-- **Notes**: `frontend/nginx.conf` needed `client_max_body_size 26M` on the `/api/` proxy location — the
-  container's nginx defaults to 1MB, which would silently reject any upload over that through the deployed
-  stack (a latent gap that also affected CSV import, never caught before since nobody had tested a
-  multi-MB import through the containerized frontend). Not called out in the plan; found and fixed during
-  full-stack verification. The admin-non-uploader rename/delete bypass was verified via a dedicated backend
-  test (`DocumentControllerTest.renameAndDeleteAllowedForAdminNonUploader`) rather than live in the browser,
-  since the seed data only has one admin account and promoting a second one, or removing an epic member to
-  test the 403 case, were both blocked by the auto-mode safety classifier as sensitive account/membership
-  mutations — reasonably so, so those two specific checklist items rely on `EpicAccessService.assertAccess`
-  being the same pre-existing, already-exercised authorization path every other epic resource uses, plus the
-  controller-test coverage of the ownership/admin-bypass logic itself.
-
-## Todos "Resolve"/"Reopen" button — 2026-08-21
-- **Plan**: inline requirement
-- **Summary**: Added an explicit "Resolve"/"Reopen" text button next to Delete on each Todos row,
-  matching the BE Requests page's action-button style. It toggles the same `done` state as the existing
-  checkbox (both stay in sync) — purely a UI consistency addition, no API/schema change.
-- **Touched**: `frontend/src/pages/TodosPage.tsx`.
-
-## BE-Ticket Request API design field — 2026-08-21
-- **Plan**: inline requirement (follow-up to the BE-Ticket Requests feature below)
-- **Summary**: Added an optional `apiDesign` freeform text field to BE-ticket requests so the team can
-  draft the endpoint/request/response shape before the actual BE ticket is created. Rendered as a
-  monospace block on the request row (click-to-edit in place, "+ Add API design" affordance when empty)
-  and as a textarea in the "New request" modal. No separate status field — the existing Open/Resolved
-  state already tracks whether a ticket still needs to be created.
-- **Touched**: `backend/.../berequest/BeTicketRequest.java`, `BeTicketRequestController.java`,
-  `dto/BeTicketRequestCreateRequest.java` / `BeTicketRequestUpdateRequest.java` /
-  `BeTicketRequestResponse.java`; `backend/src/main/resources/db/migration/V9__be_ticket_request_api_design.sql`;
-  `frontend/src/hooks/useBeRequests.ts`, `frontend/src/pages/BeRequestsPage.tsx`, `types/index.ts`.
-
-## Epic Todos, BE-Ticket Requests, and Meeting Notes — 2026-08-21
-- **Plan**: `plans/todos-be-requests-meetings-plan.md`
-- **Summary**: Added three new epic-scoped features mirroring the `epic_notes` package structure: lightweight
-  Todos (title/assignee/due date/done), a Pending BE-Ticket Requests backlog (references an existing UI task,
-  open/resolved lifecycle with `resolvedAt` tracking), and Meeting scheduling/minutes. Each ships as a new
-  backend package (`todo`, `berequest`, `meeting`) with its own Flyway migration (`V6`/`V7`/`V8`), a
-  frontend hook module, a page, a sidebar nav entry, and routes. Sheet page gained a `?focus=<taskId>`
-  deep-link that scrolls to and highlights the corresponding row, used by BE-request rows to jump to their
-  linked UI task.
-- **Touched**: `backend/.../todo/*`, `backend/.../berequest/*`, `backend/.../meeting/*`,
-  `backend/src/main/resources/db/migration/V6__epic_todos.sql` / `V7__be_ticket_requests.sql` /
-  `V8__epic_meetings.sql`; `frontend/src/hooks/useTodos.ts` / `useBeRequests.ts` / `useMeetings.ts`;
-  `frontend/src/pages/TodosPage.tsx` / `BeRequestsPage.tsx` / `MeetingsPage.tsx`; `SheetPage.tsx` (focus
-  scroll/highlight); `App.tsx`, `Sidebar.tsx`, `Icon.tsx` (new `clock` icon).
-- **Notes**: After the initial pass, UI/UX polish was applied following manual browser review: moved the
-  "New request"/"New meeting" primary buttons out of `Topbar`'s `right` slot (which visually collided with
-  and, at some click positions, stole clicks from the fixed settings-gear button) into an inline toolbar row
-  next to each list's section heading; made the Todos row checkbox visibly bordered instead of a
-  near-invisible `border-line2` outline; added an `Avatar` next to the assignee picker in Todos rows for
-  visual weight; aligned the Todos panel to the same `max-w-[760px]` as the other two new pages.
+  `components/ui/Icon.tsx`.
