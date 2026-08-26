@@ -490,7 +490,7 @@ export function SheetTable({
   function stickyCellProps(columnId: string) {
     if (!STICKY_COLUMN_IDS.includes(columnId)) return {};
     return {
-      className: 'sticky z-20 shadow-[2px_0_4px_rgba(17,19,33,0.06)]',
+      className: 'sticky z-10 shadow-[2px_0_4px_rgba(17,19,33,0.06)]',
       style: { left: stickyLeft[columnId] },
     };
   }
@@ -503,7 +503,7 @@ export function SheetTable({
   const editingTask = textEdit ? tasks.find((t) => t.id === textEdit.id) ?? allTasksInEpic.find((t) => t.id === textEdit.id) : null;
 
   return (
-    <div className="overflow-x-auto">
+    <div className="min-h-0 flex-1 overflow-auto">
       <table className="border-collapse text-[14px]" style={{ width: table.getTotalSize(), tableLayout: 'fixed' }}>
         <colgroup>
           {leafColumns.map((col) => (
@@ -516,8 +516,8 @@ export function SheetTable({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className={`group/th relative whitespace-nowrap border-b border-line bg-panel2 px-2.5 py-2.5 text-left text-[11.5px] font-semibold uppercase tracking-wider text-ink2 ${
-                    STICKY_COLUMN_IDS.includes(header.column.id) ? 'sticky z-20 shadow-[2px_0_4px_rgba(17,19,33,0.06)]' : ''
+                  className={`group/th sticky top-0 whitespace-nowrap border-b border-line bg-panel2 px-2.5 py-2.5 text-left text-[11.5px] font-semibold uppercase tracking-wider text-ink2 ${
+                    STICKY_COLUMN_IDS.includes(header.column.id) ? 'z-30 shadow-[2px_0_4px_rgba(17,19,33,0.06)]' : 'z-20'
                   }`}
                   style={STICKY_COLUMN_IDS.includes(header.column.id) ? { left: stickyLeft[header.column.id] } : undefined}
                 >
@@ -569,13 +569,13 @@ export function SheetTable({
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={8} className="border-t-2 border-line bg-panel2 px-2.5 py-2 font-semibold">
+            <td colSpan={8} className="sticky bottom-0 z-20 border-t-2 border-line bg-panel2 px-2.5 py-2 font-semibold">
               Total ({filteredCount} task{filteredCount === 1 ? '' : 's'} shown)
             </td>
-            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.dev.toFixed(1)}</td>
-            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.test.toFixed(1)}</td>
-            <td className="border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.total.toFixed(1)}</td>
-            <td colSpan={4} className="border-t-2 border-line bg-panel2" />
+            <td className="sticky bottom-0 z-20 border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.dev.toFixed(1)}</td>
+            <td className="sticky bottom-0 z-20 border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.test.toFixed(1)}</td>
+            <td className="sticky bottom-0 z-20 border-t-2 border-line bg-panel2 px-2.5 py-2 text-right font-num font-semibold">{sums.total.toFixed(1)}</td>
+            <td colSpan={4} className="sticky bottom-0 z-20 border-t-2 border-line bg-panel2" />
           </tr>
         </tfoot>
       </table>

@@ -141,10 +141,10 @@ export function SheetPage() {
   if (!epicId) return null;
 
   return (
-    <div>
+    <div className="flex h-[calc(100vh-56px)] flex-col md:h-[calc(100vh-72px)]">
       <Topbar title="Sheet" subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined} />
 
-      <div className="rounded-lg border border-line bg-panel shadow-card">
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-line bg-panel shadow-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
           <div className="relative">
             <Icon name="search" size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3" />
