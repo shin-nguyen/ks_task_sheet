@@ -8,9 +8,8 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { SearchableSelect } from '../components/ui/SearchableSelect';
-import { Markdown } from '../components/ui/Markdown';
+import { Markdown, MarkdownPreview } from '../components/ui/Markdown';
 import { MarkdownEditor } from '../components/ui/MarkdownEditor';
-import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { BeTicketRequest } from '../types';
@@ -21,8 +20,11 @@ function formatDate(iso: string) {
 
 function RequestCard({ request, onOpen }: { request: BeTicketRequest; onOpen: () => void }) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => e.key === 'Enter' && onOpen()}
       className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
     >
       <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -31,7 +33,7 @@ function RequestCard({ request, onOpen }: { request: BeTicketRequest; onOpen: ()
         </span>
         {request.resolved && <Icon name="check" size={13} className="shrink-0 text-done" />}
       </div>
-      <p className="line-clamp-3 flex-1 text-[13.5px] leading-relaxed text-ink2">{previewText(request.note, 160)}</p>
+      <MarkdownPreview content={request.note} maxHeight={68} emptyText="Empty request." className="flex-1" />
       <div className="mt-2.5 flex items-center gap-2 text-[12px] text-ink3">
         {request.apiDesign && (
           <span className="inline-flex items-center gap-1 rounded-full bg-panel2 px-1.5 py-0.5">
@@ -43,7 +45,7 @@ function RequestCard({ request, onOpen }: { request: BeTicketRequest; onOpen: ()
           {request.createdBy.name} · {formatDate(request.createdAt)}
         </span>
       </div>
-    </button>
+    </div>
   );
 }
 

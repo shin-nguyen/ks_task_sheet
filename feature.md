@@ -1,5 +1,24 @@
 # Feature log
 
+## Rendered markdown card previews for Notes/Meetings/BE Requests — 2026-08-26
+- **Plan**: inline requirement (Vietnamese: card previews on Notes/Meetings/BE Requests looked ugly —
+  even though the content is markdown, the preview just showed flattened plain text with no line breaks,
+  hard to read).
+- **Summary**: The grid-card previews on Notes, Meetings, and BE Requests used `previewText()`
+  (`lib/textPreview.ts`), which stripped markdown syntax and collapsed all newlines into a single flat
+  line. Replaced it with a new `MarkdownPreview` component (`components/ui/Markdown.tsx`) that renders the
+  actual markdown through a new `compact` mode of the existing `Markdown` component (headings collapse to
+  bold text, tighter list/paragraph spacing, links/images inert since previews sit inside a clickable
+  card) inside a fixed-height, `overflow-hidden` wrapper with a bottom fade mask (`.md-preview-fade` in
+  `index.css`) instead of a hard cutoff. Since previews now render real block markup (paragraphs, lists),
+  the three card components (`NotesPage`'s note card, `MeetingsPage`'s `MeetingCard`,
+  `BeRequestsPage`'s `RequestCard`) switched from a `<button>` wrapper to the `role="button"` +
+  `tabIndex={0}` + `onClick`/`onKeyDown` div pattern already used by `TodosPage`'s `TodoCard`, since
+  `<button>` can't validly contain block-level children. `lib/textPreview.ts` was deleted as fully unused.
+- **Touched**: `frontend/src/components/ui/Markdown.tsx`, `frontend/src/index.css`,
+  `frontend/src/pages/NotesPage.tsx`, `frontend/src/pages/MeetingsPage.tsx`,
+  `frontend/src/pages/BeRequestsPage.tsx`; removed `frontend/src/lib/textPreview.ts`.
+
 ## Markdown editor for Notes/Meetings/BE Requests — 2026-08-26
 - **Plan**: inline requirement (Vietnamese: markdown textboxes for Notes/Meetings/BE Requests were too
   small, gave no feedback on what had been typed, and had no way to format plain text into markdown).

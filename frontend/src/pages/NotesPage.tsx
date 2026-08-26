@@ -8,9 +8,8 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
-import { Markdown } from '../components/ui/Markdown';
+import { Markdown, MarkdownPreview } from '../components/ui/Markdown';
 import { MarkdownEditor } from '../components/ui/MarkdownEditor';
-import { previewText } from '../lib/textPreview';
 import type { EpicNote } from '../types';
 
 function formatRelative(iso: string) {
@@ -211,9 +210,12 @@ export function NotesPage() {
           {sortedNotes.map((note) => {
             const edited = note.updatedAt !== note.createdAt;
             return (
-              <button
+              <div
                 key={note.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setOpenNoteId(note.id)}
+                onKeyDown={(e) => e.key === 'Enter' && setOpenNoteId(note.id)}
                 className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
               >
                 <div className="mb-1.5 flex items-center gap-2 text-[12.5px] text-ink2">
@@ -223,8 +225,8 @@ export function NotesPage() {
                   <span className="shrink-0">{formatRelative(note.updatedAt)}</span>
                   {edited && <span className="shrink-0 text-ink3">· edited</span>}
                 </div>
-                <p className="line-clamp-4 flex-1 text-[13.5px] leading-relaxed text-ink2">{previewText(note.content, 220)}</p>
-              </button>
+                <MarkdownPreview content={note.content} maxHeight={92} emptyText="Empty note." className="flex-1" />
+              </div>
             );
           })}
         </div>

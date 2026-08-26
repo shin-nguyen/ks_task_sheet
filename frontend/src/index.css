@@ -23,6 +23,11 @@ body {
   color: transparent;
 }
 
+.md-preview-fade {
+  -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;

@@ -7,9 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
-import { Markdown } from '../components/ui/Markdown';
+import { Markdown, MarkdownPreview } from '../components/ui/Markdown';
 import { MarkdownEditor } from '../components/ui/MarkdownEditor';
-import { previewText } from '../lib/textPreview';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import type { EpicMeeting } from '../types';
@@ -200,10 +199,13 @@ function MeetingDetailModal({
 }
 
 function MeetingCard({ meeting, onOpen }: { meeting: EpicMeeting; onOpen: () => void }) {
-  const preview = meeting.agenda ? previewText(meeting.agenda, 140) : meeting.minutes ? previewText(meeting.minutes, 140) : '';
+  const preview = meeting.agenda || meeting.minutes || '';
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => e.key === 'Enter' && onOpen()}
       className="flex flex-col rounded-lg border border-line bg-panel p-4 text-left shadow-card transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
     >
       <div className="mb-1 flex items-start justify-between gap-2">
@@ -211,8 +213,8 @@ function MeetingCard({ meeting, onOpen }: { meeting: EpicMeeting; onOpen: () => 
         {meeting.link && <Icon name="link" size={13} className="mt-0.5 shrink-0 text-ink3" />}
       </div>
       <div className="mb-2 font-mono text-[12px] text-ink2">{formatMeetingTime(meeting.scheduledAt)}</div>
-      <p className="line-clamp-3 flex-1 text-[13.5px] leading-relaxed text-ink2">{preview || 'No agenda or minutes yet.'}</p>
-    </button>
+      <MarkdownPreview content={preview} maxHeight={68} emptyText="No agenda or minutes yet." className="flex-1" />
+    </div>
   );
 }
 
