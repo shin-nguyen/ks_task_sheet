@@ -38,6 +38,13 @@ app:
     code-complete-offset-days: 1
   storage:
     documents-dir: ${DOCUMENTS_STORAGE_DIR:./data/documents}
+    git-repos-dir: ${GIT_REPOS_STORAGE_DIR:./data/git-repos}
+  notify:
+    rocketchat:
+      base-url: ${NOTIFY_ROCKETCHAT_BASE_URL:https://chat.tma.com.vn}
+      token: ${NOTIFY_ROCKETCHAT_TOKEN:}
+      user-id: ${NOTIFY_ROCKETCHAT_USER_ID:}
+    git-access-token: ${GIT_ACCESS_TOKEN:}
 
 logging:
   level:

@@ -27,6 +27,7 @@ const PATHS: Record<string, string> = {
   users: 'M13.2 9.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4ZM6.8 9.2A2.6 2.6 0 1 0 6.8 4a2.6 2.6 0 0 0 0 5.2ZM2.5 15.5c.4-2.6 2.2-4.2 4.3-4.2s3.9 1.6 4.3 4.2M13.6 11.4c1.8.4 3 1.8 3.3 3.9',
   question: 'M7.4 7.7a2.6 2.6 0 1 1 3.7 2.4c-1 .5-1.1 1.1-1.1 2.1M10 14.6h.01',
   clock: 'M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM10 6.5V10l2.8 1.6',
+  bell: 'M5 8.5a5 5 0 0 1 10 0v3.2l1.3 2.3H3.7L5 11.7V8.5ZM8.2 15.5a1.8 1.8 0 0 0 3.6 0',
 };
 
 export function Icon({ name, size = 16, className = '', strokeWidth = 1.6, ...props }: { name: keyof typeof PATHS; size?: number; strokeWidth?: number } & SVGProps<SVGSVGElement>) {

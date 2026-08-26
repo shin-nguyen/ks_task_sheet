@@ -13,6 +13,8 @@ import { TodosPage } from './pages/TodosPage';
 import { BeRequestsPage } from './pages/BeRequestsPage';
 import { MeetingsPage } from './pages/MeetingsPage';
 import { StatusSettingsPage } from './pages/StatusSettingsPage';
+import { NotifyConfigPage } from './pages/NotifyConfigPage';
+import { NotifyGlobalSettingsPage } from './pages/NotifyGlobalSettingsPage';
 import { TeamPage } from './pages/TeamPage';
 import { EpicMembersPage } from './pages/EpicMembersPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
@@ -69,6 +71,14 @@ export default function App() {
         <Route path="/epics/:epicId/be-requests" element={<BeRequestsPage />} />
         <Route path="/epics/:epicId/meetings" element={<MeetingsPage />} />
         <Route path="/epics/:epicId/members" element={<EpicMembersPage />} />
+        <Route
+          path="/epics/:epicId/notify"
+          element={
+            <RequireAdmin>
+              <NotifyConfigPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="/settings" element={<SettingsPage />}>
           <Route index element={<SettingsIndexRedirect />} />
           <Route path="password" element={<ChangePasswordPage />} />
@@ -85,6 +95,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <TeamPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="notify"
+            element={
+              <RequireAdmin>
+                <NotifyGlobalSettingsPage />
               </RequireAdmin>
             }
           />

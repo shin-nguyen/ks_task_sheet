@@ -146,6 +146,37 @@ export interface TimelineConfig {
   gapDays: string[];
 }
 
+export interface NotifyConfig {
+  configured: boolean;
+  roomName: string;
+  roomId: string | null;
+  roomResolvedAt: string | null;
+  meetingReminderEnabled: boolean;
+  dailyReportEnabled: boolean;
+  dailyReportTime: string; // HH:mm:ss
+  mergeNotifyEnabled: boolean;
+  gitRepoUrl: string | null;
+  gitBranch: string | null;
+  gitPollIntervalMinutes: number;
+  gitCloneStatus: 'PENDING' | 'OK' | 'ERROR' | null;
+  gitLastError: string | null;
+}
+
+export interface NotifyConfigInput {
+  roomName: string;
+  meetingReminderEnabled: boolean;
+  dailyReportEnabled: boolean;
+  dailyReportTime: string; // HH:mm:ss
+  mergeNotifyEnabled: boolean;
+  gitRepoUrl: string | null;
+  gitBranch: string | null;
+  gitPollIntervalMinutes: number;
+}
+
+export interface NotifyGlobalSettings {
+  enabled: boolean;
+}
+
 export interface ImportResult {
   created: number;
   updated: number;

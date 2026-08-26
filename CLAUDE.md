@@ -135,6 +135,22 @@ Key architectural decisions that diverge from a naive reading of the spec:
   `client_max_body_size` in `frontend/nginx.conf` (set slightly *above* the Spring limit, e.g. 26M vs 25MB,
   so Spring's own `MaxUploadSizeExceededException` → `413 FILE_TOO_LARGE` JSON handler is what rejects
   oversized uploads through the deployed stack, not nginx's default 1MB cap returning a raw HTML error page).
+- **Auto Notify** (`notify` package) is the only feature with a background scheduler, an outbound HTTP
+  client, or a shelled-out subprocess — everything else in the backend is request/response only. Three
+  independent `@Scheduled(fixedRate = 60_000)` methods on `NotifyScheduler` (`@EnableScheduling` on
+  `KsTasksApplication`) drive meeting reminders, daily BE/UI status reports, and git-merge polling; code
+  reachable from them must never call `CurrentUser.get()` (no request context exists outside an HTTP call).
+  `client/RocketChatClient` wraps a `RestClient` with an explicit connect/read timeout (`SimpleClientHttpRequestFactory`) —
+  an outbound call to an unreachable chat host must fail fast, not hang the caller (request thread or
+  scheduler tick) indefinitely. `GitPollingService` shells out to the real `git` CLI via `ProcessBuilder`
+  (argv lists, never a shell string) into `app.storage.git-repos-dir`, one working clone per epic; the
+  `Authorization: Bearer <token>` header is added via `-c http.extraHeader` only when
+  `GIT_ACCESS_TOKEN` is actually set — an empty/blank bearer token breaks git's HTTP layer even against a
+  fully public repo. Config split across two tables: `epic_notify_configs` (admin-edited, Bean-Validated)
+  vs. `epic_notify_state` (scheduler-mutated runtime state — last-sent dates, last-seen commit SHA, git
+  clone status) so an admin save and a scheduler tick never contend on the same row. The whole feature
+  (page, routes, both controllers) is admin-only and hidden entirely from non-admins, same as
+  `/settings/statuses`.
 
 ### API conventions
 

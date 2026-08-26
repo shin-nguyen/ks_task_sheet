@@ -7,9 +7,10 @@ RUN mvn -B -q package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN apk add --no-cache git
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build /app/target/ks-tasks-backend.jar app.jar
-RUN mkdir -p /app/data/documents && chown -R app:app /app/data
+RUN mkdir -p /app/data/documents /app/data/git-repos && chown -R app:app /app/data
 USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

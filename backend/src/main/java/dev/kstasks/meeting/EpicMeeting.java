@@ -44,6 +44,9 @@ public class EpicMeeting {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();
@@ -126,5 +129,13 @@ public class EpicMeeting {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getReminderSentAt() {
+        return reminderSentAt;
+    }
+
+    public void setReminderSentAt(Instant reminderSentAt) {
+        this.reminderSentAt = reminderSentAt;
     }
 }

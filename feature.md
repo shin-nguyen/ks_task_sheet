@@ -1,5 +1,37 @@
 # Feature log
 
+## Auto Notify (Rocket.Chat) — 2026-08-26
+- **Plan**: `plans/auto-notify-plan.md`.
+- **Summary**: Replaced the two manual PowerShell scripts under `samples/` with a first-class per-epic
+  notify configuration: chat room name (resolved once via Rocket.Chat's `rooms.get` and cached, with an
+  explicit re-resolve action), and three independently-toggleable notification types — meeting reminders
+  (15 min before `EpicMeeting.scheduledAt`), daily BE/UI task-status-count reports, and git merge
+  notifications (server-side clone/fetch via shelled-out `git`, diffed against the last-seen commit SHA).
+  A system-wide admin master toggle sits on top of the per-epic flags. Everything runs server-side on three
+  independent 1-minute `@Scheduled` ticks instead of a script someone has to remember to leave running.
+  Admin-only end to end (hidden nav item/settings tab, `RequireAdmin`-wrapped routes, `hasRole("ADMIN")`
+  URL rules) — never exposed to non-admins even read-only.
+- **Touched**: new backend package `dev.kstasks.notify` (`EpicNotifyConfig`/`EpicNotifyState`/
+  `NotifyGlobalSettings` entities, `NotifyConfigService`, `NotifyDispatchService`, `GitPollingService`,
+  `NotifyScheduler`, `NotifyConfigController`, `NotifyGlobalSettingsController`,
+  `client/RocketChatClient`); `V12__notify.sql`; `EpicMeeting`/`EpicMeetingRepository` (+`reminderSentAt`);
+  `SecurityConfig`, `KsTasksApplication` (`@EnableScheduling`), `application.yml`, `backend/Dockerfile`
+  (+git), `.env.example`, `docker-compose.yml` (+git-repos volume). Frontend: `components/ui/Toggle.tsx`,
+  `hooks/useNotifyConfig.ts`, `hooks/useNotifyGlobalSettings.ts`, `pages/NotifyConfigPage.tsx`,
+  `pages/NotifyGlobalSettingsPage.tsx`, `Sidebar.tsx`, `SettingsPage.tsx`, `App.tsx`, `types/index.ts`.
+- **Notes**: Fixed two bugs found only by testing against the real stack (not caught by compile/lint):
+  `RocketChatClient`'s `RestClient` had no connect/read timeout, so an unreachable Rocket.Chat host hung
+  the request thread indefinitely — added a 10s/15s connect/read timeout. `GitPollingService` always
+  attached an `Authorization: Bearer <token>` header even when `GIT_ACCESS_TOKEN` is unset, and an empty
+  bearer token broke `git clone`/`fetch` even against fully public repos — the header is now omitted
+  entirely when no token is configured. Verified end-to-end against a rebuilt Docker stack: room-resolution
+  validation, meeting-reminder firing (once, `reminder_sent_at` set), daily-report firing (once/day,
+  weekday + time-of-day gating), git polling (first-poll baseline-only, then correct diff detection against
+  a real public repo), admin-only enforcement (backend 403s + frontend redirects) for a throwaway MEMBER
+  user, and global-settings toggle persistence across reload — all test users/epics/data removed afterward.
+  Real Rocket.Chat send (`chat.tma.com.vn`) could not be verified since that host isn't reachable from this
+  environment; the failure path (timeout → error toast, config not persisted) was verified instead.
+
 ## Grid layout for Notes/Todos/Meetings/BE Requests — 2026-08-25
 - **Plan**: inline requirement (conversation-driven, no plan file).
 - **Summary**: Converted the single-column, full-height-card lists on `NotesPage`, `TodosPage`,

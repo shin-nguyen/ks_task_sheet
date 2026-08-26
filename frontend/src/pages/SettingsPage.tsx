@@ -4,7 +4,13 @@ import { useAuth } from '../context/AuthContext';
 export function SettingsPage() {
   const { isAdmin } = useAuth();
   const tabs = [
-    ...(isAdmin ? [{ to: '/settings/statuses', label: 'Statuses' }, { to: '/settings/team', label: 'Team' }] : []),
+    ...(isAdmin
+      ? [
+          { to: '/settings/statuses', label: 'Statuses' },
+          { to: '/settings/team', label: 'Team' },
+          { to: '/settings/notify', label: 'Notifications' },
+        ]
+      : []),
     { to: '/settings/password', label: 'Change password' },
   ];
 

@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/epics/*/members/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/password").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/epics/*/notify-config", "/api/v1/epics/*/notify-config/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/notify/global-settings").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
