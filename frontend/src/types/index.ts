@@ -25,6 +25,7 @@ export interface Epic {
   createdByName: string | null;
   createdAt: string;
   taskCount: number;
+  isMember: boolean;
 }
 
 export type StatusCategory = 'ACTIVE' | 'DONE';

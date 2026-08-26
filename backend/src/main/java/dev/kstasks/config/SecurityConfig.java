@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/statuses/reorder").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/epics/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/epics/*/members").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/epics/*/members/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/epics/*/members/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/password").hasRole("ADMIN")

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEpic } from '../hooks/useEpics';
-import { useAddEpicMember, useEpicMembers, useRemoveEpicMember } from '../hooks/useEpicMembers';
+import { useAddEpicMember, useEpicMembers, useLeaveEpic, useRemoveEpicMember } from '../hooks/useEpicMembers';
 import { useUsers } from '../hooks/useUsers';
 import { useAuth, isApiError } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -20,11 +20,13 @@ export function EpicMembersPage() {
   const { data: epic } = useEpic(epicId);
   const { data: members } = useEpicMembers(epicId);
   const { data: allUsers } = useUsers();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
 
   const addMember = useAddEpicMember(epicId);
   const removeMember = useRemoveEpicMember(epicId);
+  const leaveEpic = useLeaveEpic(epicId);
 
   const [selectedUserId, setSelectedUserId] = useState('');
 
@@ -52,11 +54,23 @@ export function EpicMembersPage() {
     }
   }
 
+  async function handleLeave() {
+    if (!confirm('Leave this epic? You can always join it again later.')) return;
+    try {
+      await leaveEpic.mutateAsync();
+      toast.show('Left epic', 'success');
+      navigate('/epics');
+    } catch (err) {
+      toast.show(isApiError(err) ? err.message : 'Could not leave epic', 'error');
+    }
+  }
+
   return (
     <div>
       <Topbar title="Members" subtitle={epic ? `${epic.ticketId} · ${epic.name}` : undefined} />
       <p className="mb-4 max-w-2xl text-[14.5px] text-ink2">
-        Only people added here can see and work on this epic. Admins always have access to every epic.
+        All members can see this epic in the list and join it themselves. Admins can also add or remove
+        members directly.
       </p>
 
       <div className="max-w-[560px] rounded-lg border border-line bg-panel shadow-card">
@@ -69,7 +83,12 @@ export function EpicMembersPage() {
                 {m.email} · added {formatDate(m.addedAt)}
               </div>
             </div>
-            {isAdmin && (
+            {m.userId === user?.id && (
+              <button onClick={handleLeave} className="rounded-sm px-2 py-1 text-[13.5px] text-ink2 hover:bg-danger-soft hover:text-danger">
+                Leave
+              </button>
+            )}
+            {isAdmin && m.userId !== user?.id && (
               <button onClick={() => handleRemove(m.userId, m.name)} className="rounded-sm px-2 py-1 text-[13.5px] text-ink2 hover:bg-danger-soft hover:text-danger">
                 Remove
               </button>

@@ -83,6 +83,19 @@ getters/setters — Lombok is a dependency but unused in entities), `Repository`
 
 Key architectural decisions that diverge from a naive reading of the spec:
 
+- **Every epic is visible to every authenticated user, but working in one requires membership.**
+  `GET /api/v1/epics` returns all epics to everyone (`EpicService.list`), each tagged with an `isMember`
+  flag; a non-member self-joins via `POST /api/v1/epics/{epicId}/members/me` and self-leaves via
+  `DELETE .../members/me` (`EpicMemberController`). `EpicAccessService.assertAccess` — the gate every
+  epic-scoped controller/service calls before reading or writing tasks/notes/timeline/documents/etc. —
+  is unchanged: it still requires an actual `epic_members` row (or the global admin role) before letting a
+  request through, so the frontend only opens an epic's contents directly for members/admins and shows a
+  "Join epic" affordance otherwise. Admin/non-admin add-or-remove-*another*-user endpoints
+  (`POST`/`DELETE /api/v1/epics/{epicId}/members[/{userId}]`) are admin-only, enforced in **two** places
+  that must stay in sync if touched: `EpicMemberController`'s own `requireAdmin()` checks, and
+  `SecurityConfig`'s `hasRole("ADMIN")` matchers for those same paths — the latter's wildcard
+  (`DELETE /api/v1/epics/*/members/*`) also covers `/members/me`, so the self-leave route needs its own
+  more-specific `authenticated()` matcher declared *before* that wildcard rule.
 - **Task status is dynamic, not a fixed enum.** `task_statuses` is its own table (`status` package) with
   `name`, `color`, `category` (`ACTIVE`/`DONE`), `sort_order`, `is_system`, fully CRUD-able via
   `/api/v1/statuses` and reorderable via `PATCH /api/v1/statuses/reorder`. `Task.status` is a FK, not an

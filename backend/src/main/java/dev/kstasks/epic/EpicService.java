@@ -23,11 +23,8 @@ public class EpicService {
         this.epicMemberRepository = epicMemberRepository;
     }
 
-    public List<Epic> list(User currentUser) {
-        if (currentUser.getRole() == User.Role.ADMIN) {
-            return epicRepository.findAllByOrderByCreatedAtDesc();
-        }
-        return epicRepository.findAllForUser(currentUser.getId());
+    public List<Epic> list() {
+        return epicRepository.findAllByOrderByCreatedAtDesc();
     }
 
     public Epic getOrThrow(UUID id) {

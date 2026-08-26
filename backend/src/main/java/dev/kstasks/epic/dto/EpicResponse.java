@@ -11,16 +11,18 @@ public record EpicResponse(
         String name,
         String createdByName,
         Instant createdAt,
-        long taskCount
+        long taskCount,
+        boolean isMember
 ) {
-    public static EpicResponse from(Epic e, long taskCount) {
+    public static EpicResponse from(Epic e, long taskCount, boolean isMember) {
         return new EpicResponse(
                 e.getId(),
                 e.getTicketId(),
                 e.getName(),
                 e.getCreatedBy() != null ? e.getCreatedBy().getName() : null,
                 e.getCreatedAt(),
-                taskCount
+                taskCount,
+                isMember
         );
     }
 }

@@ -1,5 +1,31 @@
 # Feature log
 
+## All members see all epics, with self-join/self-leave — 2026-08-26
+- **Plan**: inline requirement (Vietnamese: all members should see all epics and be able to join one
+  themselves if needed).
+- **Summary**: `GET /api/v1/epics` now returns every epic to every authenticated user (was
+  membership-filtered for non-admins), with a new `isMember` flag per epic so the frontend can tell members
+  and non-members apart. Added self-service `POST /api/v1/epics/{epicId}/members/me` (join) and
+  `DELETE .../members/me` (leave) endpoints. `EpicsListPage` shows a "Join epic" button on cards the current
+  user isn't a member of instead of opening them directly (admins still bypass, matching
+  `EpicAccessService`'s existing all-access rule); `EpicMembersPage` copy was updated and gained a
+  self-service "Leave" action next to the signed-in user's own row. While implementing, tightened
+  `EpicMemberController.add`/`remove` to admin-only (`requireAdmin()` checks) as requested — though it
+  turned out `SecurityConfig` already enforced `POST/DELETE .../members[/*]` as admin-only at the filter-chain
+  level, so the controller checks are defense-in-depth, not a new restriction. That same `SecurityConfig`
+  wildcard rule (`DELETE /api/v1/epics/*/members/*` → `hasRole("ADMIN")`) initially caught the new
+  self-leave endpoint too; fixed by adding a more specific `DELETE .../members/me` → `authenticated()` rule
+  ahead of it.
+- **Touched**: `backend/.../epic/{EpicService,EpicController,EpicMemberController,EpicRepository}.java`,
+  `backend/.../epic/dto/EpicResponse.java`, `backend/.../config/SecurityConfig.java`,
+  `frontend/src/types/index.ts`, `frontend/src/hooks/useEpicMembers.ts`,
+  `frontend/src/pages/{EpicsListPage,EpicMembersPage}.tsx`.
+- **Notes**: Verified against the real Docker stack (rebuilt containers, not dev servers) using a
+  throwaway signup account for the member path and a throwaway SQL-promoted account for the admin-bypass
+  path; both were deleted afterward. `EpicController.delete` (delete-epic) is *not* an unguarded gap as
+  earlier assumed — `SecurityConfig` already restricts it to admins at the filter-chain level, same
+  pattern as the members endpoints.
+
 ## Rendered markdown card previews for Notes/Meetings/BE Requests — 2026-08-26
 - **Plan**: inline requirement (Vietnamese: card previews on Notes/Meetings/BE Requests looked ugly —
   even though the content is markdown, the preview just showed flattened plain text with no line breaks,

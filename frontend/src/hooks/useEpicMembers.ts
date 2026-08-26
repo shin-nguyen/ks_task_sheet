@@ -25,3 +25,25 @@ export function useRemoveEpicMember(epicId: string | undefined) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['epics', epicId, 'members'] }),
   });
 }
+
+export function useJoinEpic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (epicId: string) => api.post<EpicMember>(`/epics/${epicId}/members/me`),
+    onSuccess: (_data, epicId) => {
+      qc.invalidateQueries({ queryKey: ['epics'] });
+      qc.invalidateQueries({ queryKey: ['epics', epicId, 'members'] });
+    },
+  });
+}
+
+export function useLeaveEpic(epicId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete<void>(`/epics/${epicId}/members/me`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['epics'] });
+      qc.invalidateQueries({ queryKey: ['epics', epicId, 'members'] });
+    },
+  });
+}

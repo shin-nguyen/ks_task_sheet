@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateEpic, useDeleteEpic, useEpics } from '../hooks/useEpics';
+import { useJoinEpic } from '../hooks/useEpicMembers';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Icon } from '../components/ui/Icon';
@@ -12,6 +13,7 @@ export function EpicsListPage() {
   const { data: epics, isLoading } = useEpics();
   const createEpic = useCreateEpic();
   const deleteEpic = useDeleteEpic();
+  const joinEpic = useJoinEpic();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -40,6 +42,17 @@ export function EpicsListPage() {
       toast.show('Epic deleted', 'success');
     } catch (err) {
       toast.show(isApiError(err) ? err.message : 'Could not delete epic', 'error');
+    }
+  }
+
+  async function onJoin(e: MouseEvent, epicId: string) {
+    e.stopPropagation();
+    try {
+      await joinEpic.mutateAsync(epicId);
+      toast.show('Joined epic', 'success');
+      navigate(`/epics/${epicId}/sheet`);
+    } catch (err) {
+      toast.show(isApiError(err) ? err.message : 'Could not join epic', 'error');
     }
   }
 
@@ -82,36 +95,49 @@ export function EpicsListPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {epics?.map((epic) => (
-          <div
-            key={epic.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate(`/epics/${epic.id}/sheet`)}
-            onKeyDown={(e) => e.key === 'Enter' && navigate(`/epics/${epic.id}/sheet`)}
-            className="group relative cursor-pointer overflow-hidden rounded-lg border border-line bg-panel text-left shadow-card transition hover:-translate-y-0.5 hover:shadow-raised"
-          >
-            <div className="h-[4px] bg-rail opacity-70 transition-opacity group-hover:opacity-100" />
-            <div className="p-4">
-              {isAdmin && (
-                <button
-                  onClick={(e) => onDelete(e, epic.id, epic.name)}
-                  title="Delete epic"
-                  className="absolute right-3 top-4 rounded-sm p-1.5 text-ink3 opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger group-hover:opacity-100"
-                >
-                  <Icon name="close" size={14} />
-                </button>
-              )}
-              <div className="font-mono text-[13px] font-medium text-primary">{epic.ticketId}</div>
-              <div className="mt-1 pr-6 font-display text-[17px] font-semibold text-ink">{epic.name}</div>
-              <div className="mt-2.5 flex items-center gap-1.5 text-[13.5px] text-ink2">
-                <Icon name="sheet" size={13} className="text-ink3" />
-                {epic.taskCount} task{epic.taskCount === 1 ? '' : 's'}
-                {epic.createdByName && <> · created by {epic.createdByName}</>}
+        {epics?.map((epic) => {
+          const canOpen = isAdmin || epic.isMember;
+          return (
+            <div
+              key={epic.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => canOpen && navigate(`/epics/${epic.id}/sheet`)}
+              onKeyDown={(e) => e.key === 'Enter' && canOpen && navigate(`/epics/${epic.id}/sheet`)}
+              className={`group relative overflow-hidden rounded-lg border border-line bg-panel text-left shadow-card transition ${canOpen ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-raised' : 'opacity-80'}`}
+            >
+              <div className="h-[4px] bg-rail opacity-70 transition-opacity group-hover:opacity-100" />
+              <div className="p-4">
+                {isAdmin && (
+                  <button
+                    onClick={(e) => onDelete(e, epic.id, epic.name)}
+                    title="Delete epic"
+                    className="absolute right-3 top-4 rounded-sm p-1.5 text-ink3 opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger group-hover:opacity-100"
+                  >
+                    <Icon name="close" size={14} />
+                  </button>
+                )}
+                <div className="font-mono text-[13px] font-medium text-primary">{epic.ticketId}</div>
+                <div className="mt-1 pr-6 font-display text-[17px] font-semibold text-ink">{epic.name}</div>
+                <div className="mt-2.5 flex items-center gap-1.5 text-[13.5px] text-ink2">
+                  <Icon name="sheet" size={13} className="text-ink3" />
+                  {epic.taskCount} task{epic.taskCount === 1 ? '' : 's'}
+                  {epic.createdByName && <> · created by {epic.createdByName}</>}
+                </div>
+                {!canOpen && (
+                  <Button
+                    variant="primary"
+                    className="mt-3 w-full"
+                    onClick={(e) => onJoin(e, epic.id)}
+                    disabled={joinEpic.isPending}
+                  >
+                    Join epic
+                  </Button>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 package dev.kstasks.epic;
 
 import dev.kstasks.auth.CurrentUser;
+import dev.kstasks.auth.User;
 import dev.kstasks.epic.dto.EpicRequest;
 import dev.kstasks.epic.dto.EpicResponse;
 import jakarta.validation.Valid;
@@ -19,16 +20,19 @@ public class EpicController {
 
     private final EpicService epicService;
     private final EpicAccessService epicAccessService;
+    private final EpicMemberRepository epicMemberRepository;
 
-    public EpicController(EpicService epicService, EpicAccessService epicAccessService) {
+    public EpicController(EpicService epicService, EpicAccessService epicAccessService, EpicMemberRepository epicMemberRepository) {
         this.epicService = epicService;
         this.epicAccessService = epicAccessService;
+        this.epicMemberRepository = epicMemberRepository;
     }
 
     @GetMapping
     public List<EpicResponse> list() {
-        return epicService.list(CurrentUser.get()).stream()
-                .map(e -> EpicResponse.from(e, epicService.taskCount(e.getId())))
+        User user = CurrentUser.get();
+        return epicService.list().stream()
+                .map(e -> EpicResponse.from(e, epicService.taskCount(e.getId()), isMember(e.getId(), user)))
                 .toList();
     }
 
@@ -36,25 +40,29 @@ public class EpicController {
     public EpicResponse get(@PathVariable UUID id) {
         epicAccessService.assertAccess(id);
         var epic = epicService.getOrThrow(id);
-        return EpicResponse.from(epic, epicService.taskCount(id));
+        return EpicResponse.from(epic, epicService.taskCount(id), isMember(id, CurrentUser.get()));
     }
 
     @PostMapping
     public ResponseEntity<EpicResponse> create(@Valid @RequestBody EpicRequest req) {
         var epic = epicService.create(req, CurrentUser.get());
-        return ResponseEntity.status(HttpStatus.CREATED).body(EpicResponse.from(epic, 0));
+        return ResponseEntity.status(HttpStatus.CREATED).body(EpicResponse.from(epic, 0, true));
     }
 
     @PutMapping("/{id}")
     public EpicResponse update(@PathVariable UUID id, @Valid @RequestBody EpicRequest req) {
         epicAccessService.assertAccess(id);
         var epic = epicService.update(id, req);
-        return EpicResponse.from(epic, epicService.taskCount(id));
+        return EpicResponse.from(epic, epicService.taskCount(id), isMember(id, CurrentUser.get()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         epicService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isMember(UUID epicId, User user) {
+        return epicMemberRepository.existsByEpicIdAndUserId(epicId, user.getId());
     }
 }
