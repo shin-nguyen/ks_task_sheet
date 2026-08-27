@@ -71,7 +71,7 @@ found by testing — not a step-by-step narration of how each change was verifie
   MeetingsPage,BeRequestsPage}.tsx`; `hooks/{useTodos,useBeRequests,useMeetings}.ts`.
 
 ## Auto Notify (Rocket.Chat)
-*(Last updated 2026-08-26)*
+*(Last updated 2026-08-27)*
 - **What it is**: Server-side, per-epic Rocket.Chat notifications — meeting reminders (15 min before
   `EpicMeeting.scheduledAt`), daily BE/UI task-status-count reports, and git-merge notifications (polls a
   shelled-out `git` clone, diffs against the last-seen commit SHA) — replacing two manual PowerShell scripts
@@ -99,6 +99,19 @@ found by testing — not a step-by-step narration of how each change was verifie
     public repo. The header is now added via `-c http.extraHeader` only when the token is actually non-blank.
   - Real Rocket.Chat send to the production host (`chat.tma.com.vn`) isn't reachable from the dev/CI
     environment — only the failure path (timeout → error toast, config not persisted) can be verified there.
+    To verify message content changes, temporarily add a `log.warn` of the built message in
+    `sendToEpicRoom` before the outbound call, trigger the scheduler tick against a manually-inserted
+    `epic_notify_configs` row (a real `room_id` requires resolving against a live Rocket.Chat room and
+    can't be created through the API in this environment), then revert the log line.
+  - `NotifyDispatchService.buildMeetingReminderMessage` originally formatted `meeting.getScheduledAt()`
+    in `ZoneOffset.UTC` and labeled it "UTC" — correct for *when* the reminder fires (`checkMeetingReminders`
+    compares `Instant`s directly, so firing was never timezone-wrong), but the displayed clock time in the
+    Rocket.Chat message didn't match Vietnam wall-clock time users actually expect. Now formats and shows
+    both: `"starts at HH:mm (VN) / HH:mm UTC"`, using `ZoneId.of("Asia/Ho_Chi_Minh")` alongside the existing
+    UTC formatter. `checkDailyReports`' `dailyReportTime` comparison still runs against
+    `ZoneOffset.UTC` — same underlying VN/UTC ambiguity, but out of scope for this fix (admin picks a plain
+    `HH:mm` in `NotifySettingsPage.tsx` with no zone attached); worth revisiting if daily-report timing is
+    ever reported as wrong.
 - **Files**: `backend/.../notify/*`, `client/RocketChatClient`, `V12__notify.sql`,
   `EpicMeeting`/`EpicMeetingRepository` (+`reminderSentAt`), `SecurityConfig`, `KsTasksApplication`
   (`@EnableScheduling`), `application.yml`, `backend/Dockerfile` (+git), `.env.example`, `docker-compose.yml`

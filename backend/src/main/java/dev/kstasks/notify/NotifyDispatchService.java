@@ -15,6 +15,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -28,7 +29,9 @@ import java.util.stream.Collectors;
 public class NotifyDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(NotifyDispatchService.class);
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneOffset.UTC);
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter VN_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm").withZone(VN_ZONE);
+    private static final DateTimeFormatter UTC_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneOffset.UTC);
 
     private final NotifyGlobalSettingsRepository globalSettingsRepository;
     private final RocketChatClient rocketChatClient;
@@ -107,7 +110,9 @@ public class NotifyDispatchService {
         StringBuilder sb = new StringBuilder("*[Meeting Reminder]* \"")
                 .append(meeting.getTitle())
                 .append("\" starts at ")
-                .append(TIME_FORMAT.format(meeting.getScheduledAt()))
+                .append(VN_TIME_FORMAT.format(meeting.getScheduledAt()))
+                .append(" (VN) / ")
+                .append(UTC_TIME_FORMAT.format(meeting.getScheduledAt()))
                 .append(" UTC");
         if (meeting.getLink() != null && !meeting.getLink().isBlank()) {
             sb.append("\nLink: ").append(meeting.getLink());
