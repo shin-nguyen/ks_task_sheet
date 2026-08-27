@@ -7,7 +7,7 @@ Keep each section factual and reuse-oriented: what the feature is, non-obvious d
 found by testing — not a step-by-step narration of how each change was verified.
 
 ## Epics: universal visibility + self-join/self-leave
-*(Last updated 2026-08-26)*
+*(Last updated 2026-08-27 — disabled non-member epics in the sidebar picker)*
 - **What it is**: Every authenticated user can see every epic on `/epics` (previously non-admins only saw
   epics they were a member of). Members join/leave epics themselves instead of only an admin adding/removing
   them.
@@ -23,10 +23,18 @@ found by testing — not a step-by-step narration of how each change was verifie
 - **Frontend**: `EpicsListPage` shows a "Join epic" button (instead of opening the epic) on cards the
   current user isn't a member of; admins bypass this and open directly, matching `EpicAccessService`'s
   existing all-access rule. `EpicMembersPage` has a self-service "Leave" action next to the signed-in user's
-  own row.
+  own row. The `Sidebar` epic-picker dropdown applies the same `isAdmin || isMember` gate: non-member epics
+  render disabled (dimmed, `cursor-not-allowed`, no click/navigate) instead of being openable — this dropdown
+  was missed when universal visibility first shipped, since `useEpics()` started returning every epic to
+  every user but the dropdown had no membership check, letting a non-member click straight into
+  `/epics/{id}/sheet` and hit `EpicAccessService`-gated 403s on every data fetch.
+- **Gotcha**: there is still no route-level guard — a non-member who navigates directly to an epic-scoped
+  URL (typed/bookmarked, not via the sidebar or `EpicsListPage`) isn't blocked by the frontend and will see
+  per-request 403s from `EpicAccessService`; only the two picker entry points (`EpicsListPage`, `Sidebar`)
+  are currently gated in the UI.
 - **Files**: `backend/.../epic/{EpicService,EpicController,EpicMemberController,EpicRepository}.java`,
   `epic/dto/EpicResponse.java`, `config/SecurityConfig.java`; `frontend/src/types/index.ts`,
-  `hooks/useEpicMembers.ts`, `pages/{EpicsListPage,EpicMembersPage}.tsx`.
+  `hooks/useEpicMembers.ts`, `pages/{EpicsListPage,EpicMembersPage}.tsx`, `components/layout/Sidebar.tsx`.
 
 ## Notes / Todos / BE-Ticket Requests / Meetings pages
 *(Last updated 2026-08-27 — added fullscreen expand to MarkdownEditor)*

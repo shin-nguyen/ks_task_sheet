@@ -20,7 +20,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const { epicId } = useParams();
   const { data: epics } = useEpics();
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [pickerOpen, setPickerOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -64,18 +64,26 @@ export function Sidebar() {
         </button>
         {pickerOpen && (
           <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 origin-top animate-[scale-in_0.14s_ease-out] overflow-auto rounded-md border border-sidebar-line bg-[#181B2C] shadow-raised">
-            {epics?.map((e) => (
-              <button
-                key={e.id}
-                onClick={() => {
-                  setPickerOpen(false);
-                  navigate(`/epics/${e.id}/sheet`);
-                }}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-sidebar-ink transition-colors hover:bg-sidebar-hover"
-              >
-                <span className="font-mono text-ui">{e.ticketId}</span> · {e.name}
-              </button>
-            ))}
+            {epics?.map((e) => {
+              const canOpen = isAdmin || e.isMember;
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => {
+                    if (!canOpen) return;
+                    setPickerOpen(false);
+                    navigate(`/epics/${e.id}/sheet`);
+                  }}
+                  disabled={!canOpen}
+                  title={canOpen ? undefined : 'Join this epic from All epics… to access it'}
+                  className={`block w-full px-3 py-2.5 text-left text-[14px] transition-colors ${
+                    canOpen ? 'text-sidebar-ink hover:bg-sidebar-hover' : 'cursor-not-allowed text-sidebar-ink2 opacity-50'
+                  }`}
+                >
+                  <span className="font-mono text-ui">{e.ticketId}</span> · {e.name}
+                </button>
+              );
+            })}
             <button
               onClick={() => {
                 setPickerOpen(false);
