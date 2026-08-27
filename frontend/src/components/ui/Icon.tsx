@@ -28,6 +28,8 @@ const PATHS: Record<string, string> = {
   question: 'M7.4 7.7a2.6 2.6 0 1 1 3.7 2.4c-1 .5-1.1 1.1-1.1 2.1M10 14.6h.01',
   clock: 'M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM10 6.5V10l2.8 1.6',
   bell: 'M5 8.5a5 5 0 0 1 10 0v3.2l1.3 2.3H3.7L5 11.7V8.5ZM8.2 15.5a1.8 1.8 0 0 0 3.6 0',
+  expand: 'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',
+  collapse: 'M7 3v4H3M13 3v4h4M17 13h-4v4M3 13h4v4',
 };
 
 export function Icon({ name, size = 16, className = '', strokeWidth = 1.6, ...props }: { name: keyof typeof PATHS; size?: number; strokeWidth?: number } & SVGProps<SVGSVGElement>) {

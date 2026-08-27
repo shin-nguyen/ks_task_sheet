@@ -29,7 +29,7 @@ found by testing — not a step-by-step narration of how each change was verifie
   `hooks/useEpicMembers.ts`, `pages/{EpicsListPage,EpicMembersPage}.tsx`.
 
 ## Notes / Todos / BE-Ticket Requests / Meetings pages
-*(Last updated 2026-08-27)*
+*(Last updated 2026-08-27 — added fullscreen expand to MarkdownEditor)*
 - **What it is**: Four epic-scoped collaboration pages — free-form Notes, lightweight Todos, a Pending
   BE-Ticket Requests backlog, and Meeting scheduling/minutes. They share layout and markdown conventions and
   tend to get built out/polished together.
@@ -51,7 +51,11 @@ found by testing — not a step-by-step narration of how each change was verifie
   to React elements, no `dangerouslySetInnerHTML`/`rehype-raw`, default `urlTransform` strips
   non-http(s)/mailto/irc link schemes — safe by default against script injection in user-authored content).
   Editing goes through `components/ui/MarkdownEditor.tsx` (bold/italic/heading/quote/code/list/link toolbar +
-  Write/Preview tabs over the same `Markdown` renderer, taller `resize-y` textareas). **Card-grid previews**
+  Write/Preview tabs over the same `Markdown` renderer, taller `resize-y` textareas). Every instance also has
+  an **Expand/Collapse** toolbar button that opens a `createPortal`-rendered fullscreen overlay (`z-[70]`,
+  covers the underlying `Modal`'s `z-50`) with the same toolbar + a full-viewport textarea, for editing
+  longer content than the inline box comfortably fits; Escape or the Collapse button returns to the inline
+  view (see Gotchas below for the focus/blur handling this required). **Card-grid previews**
   render through a `compact` mode of `Markdown` plus a `MarkdownPreview` wrapper (headings collapse to bold
   text, tighter spacing, inert links/images, fixed-height `overflow-hidden` container with a bottom fade mask
   via `.md-preview-fade` in `index.css`) instead of a flattened-plain-text truncation — the old
@@ -73,12 +77,21 @@ found by testing — not a step-by-step narration of how each change was verifie
     `showPreviewToggle={false}` (toolbar only) because that flow saves on textarea blur — a Preview-tab click
     would unmount the textarea and fire the save-and-exit handler. Toolbar buttons everywhere use
     `onMouseDown` preventDefault so clicking them doesn't blur/lose the current text selection.
+  - The fullscreen Expand toggle had the same blur hazard: moving focus from the inline textarea to the
+    portal's fullscreen one (and back) is a real DOM blur, which would otherwise fire a consumer's
+    save-on-blur (BE-Requests) or cancel-on-`Escape` (Notes/BE-Requests composer) handler mid-toggle.
+    `MarkdownEditor` fixes this by keeping both textareas mounted simultaneously and checking
+    `e.relatedTarget` in a shared `onBlur` wrapper — a blur is only forwarded to the consumer's `onBlur` if
+    focus isn't landing on the editor's *other* textarea. `Escape` while expanded is intercepted before the
+    consumer's `onKeyDown` ever sees it (collapses fullscreen instead of cancelling the edit); all other keys
+    still pass through, so e.g. Ctrl+Enter-to-submit works the same expanded or not.
   - The app-wide fixed settings-gear button visually overlaps/steals clicks from any `Topbar` `right`-slot
     button at some viewport widths (also seen on `DocumentsPage`'s "Upload document"). Known, not fixed, out
     of scope every time it's come up — worth a real fix if touched again.
 - **Files**: `backend/.../{todo,berequest,meeting}/*`; `frontend/src/components/ui/{Markdown,
-  MarkdownEditor}.tsx`, `index.css` (`.md-preview-fade`); `frontend/src/pages/{NotesPage,TodosPage,
-  MeetingsPage,BeRequestsPage}.tsx`; `hooks/{useTodos,useBeRequests,useMeetings}.ts`.
+  MarkdownEditor,Icon}.tsx` (`Icon` gained `expand`/`collapse` glyphs), `index.css` (`.md-preview-fade`);
+  `frontend/src/pages/{NotesPage,TodosPage,MeetingsPage,BeRequestsPage}.tsx`;
+  `hooks/{useTodos,useBeRequests,useMeetings}.ts`.
 
 ## Auto Notify (Rocket.Chat)
 *(Last updated 2026-08-27)*

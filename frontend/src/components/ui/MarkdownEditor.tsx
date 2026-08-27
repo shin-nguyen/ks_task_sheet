@@ -1,4 +1,5 @@
-import { useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { Markdown } from './Markdown';
 import { Tooltip } from './Tooltip';
@@ -107,10 +108,12 @@ export function MarkdownEditor({
   showPreviewToggle?: boolean;
 }) {
   const [mode, setMode] = useState<'write' | 'preview'>('write');
+  const [expanded, setExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const expandedTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   function applyAction(action: Action) {
-    const el = textareaRef.current;
+    const el = expanded ? expandedTextareaRef.current : textareaRef.current;
     if (!el) return;
     const result = formatValue(action, value, el.selectionStart, el.selectionEnd);
     onChange(result.value);
@@ -120,12 +123,39 @@ export function MarkdownEditor({
     });
   }
 
+  // Expanding/collapsing moves focus between the inline and fullscreen textareas; suppress the
+  // resulting blur (which would otherwise trigger a consumer's save-on-blur / cancel-on-blur logic)
+  // when focus is just moving between our own two textareas rather than leaving the editor.
+  function handleBlur(e: FocusEvent<HTMLTextAreaElement>) {
+    const next = e.relatedTarget as Node | null;
+    if (next && (next === textareaRef.current || next === expandedTextareaRef.current)) return;
+    onBlur?.(e);
+  }
+
+  function closeFullscreen() {
+    textareaRef.current?.focus();
+    setExpanded(false);
+  }
+
+  function handleExpandedKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      closeFullscreen();
+      return;
+    }
+    onKeyDown?.(e);
+  }
+
+  useEffect(() => {
+    if (!expanded) return;
+    const raf = requestAnimationFrame(() => expandedTextareaRef.current?.focus());
+    return () => cancelAnimationFrame(raf);
+  }, [expanded]);
+
   const tabBase = 'rounded-sm px-2 py-0.5 text-[12px] font-medium transition-colors';
 
-  return (
-    <div
-      className={`overflow-hidden rounded-sm border border-line focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 ${className}`}
-    >
+  function renderToolbar(inFullscreen: boolean) {
+    return (
       <div className="flex items-center justify-between gap-2 border-b border-line bg-panel2 px-1.5 py-1">
         <div className="flex items-center gap-0.5">
           {TOOLBAR.map((t) => (
@@ -143,46 +173,94 @@ export function MarkdownEditor({
             </Tooltip>
           ))}
         </div>
-        {showPreviewToggle && (
-          <div className="flex items-center gap-0.5 rounded-sm bg-panel p-0.5">
+        <div className="flex items-center gap-1.5">
+          {showPreviewToggle && (
+            <div className="flex items-center gap-0.5 rounded-sm bg-panel p-0.5">
+              <button
+                type="button"
+                tabIndex={-1}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setMode('write')}
+                className={`${tabBase} ${mode === 'write' ? 'bg-white text-ink shadow-sm' : 'text-ink3 hover:text-ink2'}`}
+              >
+                Write
+              </button>
+              <button
+                type="button"
+                tabIndex={-1}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setMode('preview')}
+                className={`${tabBase} ${mode === 'preview' ? 'bg-white text-ink shadow-sm' : 'text-ink3 hover:text-ink2'}`}
+              >
+                Preview
+              </button>
+            </div>
+          )}
+          <Tooltip label={inFullscreen ? 'Collapse' : 'Expand'}>
             <button
               type="button"
               tabIndex={-1}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setMode('write')}
-              className={`${tabBase} ${mode === 'write' ? 'bg-white text-ink shadow-sm' : 'text-ink3 hover:text-ink2'}`}
+              onClick={() => (inFullscreen ? closeFullscreen() : setExpanded(true))}
+              className="flex h-6 w-6 items-center justify-center rounded-sm text-ink2 transition-colors hover:bg-panel hover:text-ink"
             >
-              Write
+              <Icon name={inFullscreen ? 'collapse' : 'expand'} size={12} />
             </button>
-            <button
-              type="button"
-              tabIndex={-1}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setMode('preview')}
-              className={`${tabBase} ${mode === 'preview' ? 'bg-white text-ink shadow-sm' : 'text-ink3 hover:text-ink2'}`}
-            >
-              Preview
-            </button>
+          </Tooltip>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div
+        className={`overflow-hidden rounded-sm border border-line focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 ${className}`}
+      >
+        {renderToolbar(false)}
+        {mode === 'write' ? (
+          <textarea
+            ref={textareaRef}
+            id={id}
+            tabIndex={expanded ? -1 : undefined}
+            autoFocus={autoFocus}
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={handleBlur}
+            className={`block w-full resize-y border-0 p-2.5 leading-relaxed text-ink focus:outline-none ${minHeightClass} ${mono ? 'font-mono text-[13px]' : 'text-[14.5px]'}`}
+          />
+        ) : (
+          <div className={`overflow-y-auto p-2.5 ${minHeightClass}`}>
+            {value.trim() ? <Markdown content={value} /> : <p className="text-[13.5px] text-ink3">Nothing to preview yet.</p>}
           </div>
         )}
       </div>
-      {mode === 'write' ? (
-        <textarea
-          ref={textareaRef}
-          id={id}
-          autoFocus={autoFocus}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-          className={`block w-full resize-y border-0 p-2.5 leading-relaxed text-ink focus:outline-none ${minHeightClass} ${mono ? 'font-mono text-[13px]' : 'text-[14.5px]'}`}
-        />
-      ) : (
-        <div className={`overflow-y-auto p-2.5 ${minHeightClass}`}>
-          {value.trim() ? <Markdown content={value} /> : <p className="text-[13.5px] text-ink3">Nothing to preview yet.</p>}
-        </div>
-      )}
-    </div>
+      {expanded &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] flex flex-col bg-white animate-[fade-in_0.15s_ease-out]">
+            {renderToolbar(true)}
+            <div className="min-h-0 flex-1">
+              {mode === 'write' ? (
+                <textarea
+                  ref={expandedTextareaRef}
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  onKeyDown={handleExpandedKeyDown}
+                  onBlur={handleBlur}
+                  className={`block h-full w-full resize-none border-0 p-4 leading-relaxed text-ink focus:outline-none ${mono ? 'font-mono text-[14px]' : 'text-[15.5px]'}`}
+                />
+              ) : (
+                <div className="h-full overflow-y-auto p-4">
+                  {value.trim() ? <Markdown content={value} /> : <p className="text-[13.5px] text-ink3">Nothing to preview yet.</p>}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
