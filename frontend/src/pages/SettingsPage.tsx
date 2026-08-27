@@ -11,7 +11,7 @@ export function SettingsPage() {
           { to: '/settings/notify', label: 'Notifications' },
         ]
       : []),
-    { to: '/settings/password', label: 'Change password' },
+    { to: '/settings/password', label: 'Account' },
   ];
 
   return (

@@ -10,6 +10,7 @@ interface AuthContextValue {
   signup: (email: string, name: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateName: (name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -46,10 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((u) => (u ? { ...u, mustChangePassword: false } : u));
   }, []);
 
+  const updateName = useCallback(async (name: string) => {
+    const u = await api.patch<AuthUser>('/auth/name', { name });
+    setUser(u);
+  }, []);
+
   const isAdmin = user?.role === 'ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, login, signup, logout, changePassword }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, login, signup, logout, changePassword, updateName }}>
       {children}
     </AuthContext.Provider>
   );

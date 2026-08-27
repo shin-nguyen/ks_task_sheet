@@ -4,6 +4,7 @@ import dev.kstasks.auth.dto.AuthUserResponse;
 import dev.kstasks.auth.dto.ChangePasswordRequest;
 import dev.kstasks.auth.dto.LoginRequest;
 import dev.kstasks.auth.dto.SignupRequest;
+import dev.kstasks.auth.dto.UpdateNameRequest;
 import dev.kstasks.common.ApiException;
 import dev.kstasks.config.CookieUtil;
 import dev.kstasks.config.JwtService;
@@ -69,6 +70,15 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<AuthUserResponse> me() {
         return ResponseEntity.ok(AuthUserResponse.from(CurrentUser.get()));
+    }
+
+    @PatchMapping("/name")
+    public ResponseEntity<AuthUserResponse> updateName(@Valid @RequestBody UpdateNameRequest req) {
+        User user = userRepository.findById(CurrentUser.get().getId())
+                .orElseThrow(() -> ApiException.unauthorized("Not authenticated"));
+        user.setName(req.name().trim());
+        userRepository.save(user);
+        return ResponseEntity.ok(AuthUserResponse.from(user));
     }
 
     @PatchMapping("/password")

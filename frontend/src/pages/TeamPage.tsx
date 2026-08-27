@@ -5,7 +5,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
-import { useAdminResetPassword, useUpdateUserRole, useUsers } from '../hooks/useUsers';
+import { useAdminResetPassword, useDeleteUser, useUpdateUserRole, useUsers } from '../hooks/useUsers';
 import { useToast } from '../context/ToastContext';
 import { isApiError } from '../context/AuthContext';
 import { useAuth } from '../context/AuthContext';
@@ -86,8 +86,10 @@ function ResetPasswordModal({ member, onClose }: { member: UserSummary; onClose:
 function TeamRow({ member }: { member: UserSummary }) {
   const { user: currentUser } = useAuth();
   const updateRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
   const toast = useToast();
   const [resetting, setResetting] = useState(false);
+  const isSelf = member.id === currentUser?.id;
 
   async function changeRole(role: UserRole) {
     if (role === member.role) return;
@@ -98,13 +100,23 @@ function TeamRow({ member }: { member: UserSummary }) {
     }
   }
 
+  async function deleteMember() {
+    if (!confirm(`Delete ${member.name}? This can't be undone.`)) return;
+    try {
+      await deleteUser.mutateAsync(member.id);
+      toast.show(`${member.name} deleted`, 'success');
+    } catch (err) {
+      toast.show(isApiError(err) ? err.message : 'Could not delete user', 'error');
+    }
+  }
+
   return (
     <div className="flex items-center gap-3.5 border-b border-line px-4 py-3.5 last:border-b-0">
       <Avatar name={member.name} size={30} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15.5px] font-semibold text-ink">
           {member.name}
-          {member.id === currentUser?.id && <span className="ml-2 text-[13px] font-normal text-ink2">(you)</span>}
+          {isSelf && <span className="ml-2 text-[13px] font-normal text-ink2">(you)</span>}
         </div>
         <div className="truncate text-[13.5px] text-ink2">{member.email}</div>
       </div>
@@ -118,6 +130,11 @@ function TeamRow({ member }: { member: UserSummary }) {
         <option value="ADMIN">Admin</option>
         <option value="MEMBER">Member</option>
       </Select>
+      {!isSelf && (
+        <Button variant="danger" onClick={deleteMember} disabled={deleteUser.isPending}>
+          Delete
+        </Button>
+      )}
       {resetting && <ResetPasswordModal member={member} onClose={() => setResetting(false)} />}
     </div>
   );

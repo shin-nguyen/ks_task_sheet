@@ -5,6 +5,7 @@ import dev.kstasks.auth.dto.UpdateRoleRequest;
 import dev.kstasks.auth.dto.UserResponse;
 import dev.kstasks.common.ApiException;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +49,24 @@ public class UserController {
         target.setPassword(passwordEncoder.encode(req.newPassword()));
         target.setMustChangePassword(true);
         userRepository.save(target);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        User target = userRepository.findById(id).orElseThrow(() -> ApiException.notFound("User not found"));
+        if (target.getId().equals(CurrentUser.get().getId())) {
+            throw ApiException.badRequest("CANNOT_DELETE_SELF", "You cannot delete your own account");
+        }
+        if (target.getRole() == User.Role.ADMIN && userRepository.countByRole(User.Role.ADMIN) <= 1) {
+            throw ApiException.badRequest("LAST_ADMIN", "Cannot remove the last remaining admin");
+        }
+        try {
+            userRepository.delete(target);
+        } catch (DataIntegrityViolationException e) {
+            throw ApiException.conflict("USER_HAS_DATA",
+                    "Cannot delete this user because they have associated tasks, notes, or other data");
+        }
         return ResponseEntity.noContent().build();
     }
 }

@@ -135,3 +135,30 @@ found by testing — not a step-by-step narration of how each change was verifie
   `backend/.gitignore`; `frontend/src/hooks/useDocuments.ts`, `components/documents/UploadDocumentModal.tsx`,
   `pages/DocumentsPage.tsx`, `types/index.ts`, `lib/api.ts` (`getBlob`), `App.tsx`, `Sidebar.tsx`,
   `components/ui/Icon.tsx`.
+
+## Account: self-service name change + admin user deletion
+*(Last updated 2026-08-27)*
+- **What it is**: Any signed-in user can rename themselves from Settings → Account. Admins can permanently
+  delete another user from Settings → Team.
+- **Backend**: `PATCH /api/v1/auth/name` (`AuthController.updateName`, `authenticated()`, no admin gate) sets
+  the caller's own name — mirrors the existing self-service `PATCH /api/v1/auth/password` shape.
+  `DELETE /api/v1/users/{id}` (`UserController.delete`, admin-only via `SecurityConfig`) hard-deletes a
+  `User` row. Two guard checks before deletion, matching the existing `demotingLastAdmin` pattern in
+  `updateRole`: rejects deleting yourself (`CANNOT_DELETE_SELF`) and rejects deleting the last remaining
+  admin (`LAST_ADMIN`). Most FK columns onto `users` (`tasks.be_assignee_id`, `epic_notes.author_id`,
+  `epic_documents.uploaded_by`, `epic_todos.created_by`, etc.) have no `ON DELETE CASCADE`, so deleting a
+  user who has ever created or been assigned anything throws a Postgres FK violation — caught as
+  `DataIntegrityViolationException` and surfaced as `409 USER_HAS_DATA` rather than a raw 500. There is no
+  reassignment/cascade flow; in practice this means only genuinely unused accounts (never assigned a task,
+  never authored a note/todo/request/meeting/document) can actually be deleted today.
+- **Frontend**: `ChangePasswordPage.tsx` (still mounted at `/settings/password`, tab relabeled "Account" in
+  `SettingsPage.tsx`) now stacks a new `components/auth/NameChangeForm.tsx` above the existing
+  `PasswordChangeForm.tsx`; `AuthContext.updateName` calls the endpoint and updates the local `user` state
+  (same pattern as `changePassword`). `TeamPage.tsx`'s `TeamRow` gets a `Delete` button (danger variant,
+  `window.confirm` gate, same pattern as `DocumentsPage`'s delete) next to the role `Select` — hidden for the
+  signed-in user's own row; a `USER_HAS_DATA`/`LAST_ADMIN`/`CANNOT_DELETE_SELF` failure surfaces via the
+  existing toast + `isApiError` pattern, not a dedicated error UI.
+- **Files**: `backend/.../auth/{AuthController,UserController,CurrentUser}.java`,
+  `auth/dto/UpdateNameRequest.java`, `config/SecurityConfig.java`; `frontend/src/context/AuthContext.tsx`,
+  `components/auth/NameChangeForm.tsx`, `pages/{ChangePasswordPage,SettingsPage,TeamPage}.tsx`,
+  `hooks/useUsers.ts`.

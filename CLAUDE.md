@@ -164,6 +164,14 @@ Key architectural decisions that diverge from a naive reading of the spec:
   clone status) so an admin save and a scheduler tick never contend on the same row. The whole feature
   (page, routes, both controllers) is admin-only and hidden entirely from non-admins, same as
   `/settings/statuses`.
+- **Admin user deletion (`DELETE /api/v1/users/{id}`) is a hard delete with no reassignment/cascade step.**
+  Most FK columns onto `users` (task assignees, note/todo/BE-request/meeting `created_by`/`author_id`,
+  document `uploaded_by`) have no `ON DELETE CASCADE`, so deleting a user who has ever created or been
+  assigned anything hits a Postgres FK violation, which `UserController.delete` catches and turns into
+  `409 USER_HAS_DATA` rather than a raw 500. There's no UI or backend flow to reassign/clear that data first
+  — only accounts with zero associated rows can actually be deleted today. If a future migration adds a new
+  `REFERENCES users(id)` column, decide deliberately whether it should cascade or continue blocking deletion;
+  don't assume the existing columns' behavior.
 
 ### API conventions
 
