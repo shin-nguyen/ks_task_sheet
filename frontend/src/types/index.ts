@@ -86,6 +86,7 @@ export interface EpicNote {
   id: string;
   content: string;
   author: UserSummary;
+  updatedBy: UserSummary;
   createdAt: string;
   updatedAt: string;
 }

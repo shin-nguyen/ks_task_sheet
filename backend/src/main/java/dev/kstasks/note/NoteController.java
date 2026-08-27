@@ -44,30 +44,32 @@ public class NoteController {
         note.setEpic(epic);
         note.setContent(req.content());
         note.setAuthor(CurrentUser.get());
+        note.setUpdatedBy(CurrentUser.get());
         note = noteRepository.save(note);
         return ResponseEntity.status(HttpStatus.CREATED).body(NoteResponse.from(note));
     }
 
     @PutMapping("/notes/{id}")
     public NoteResponse update(@PathVariable UUID id, @Valid @RequestBody NoteRequest req) {
-        EpicNote note = getOwnedOrThrow(id);
+        EpicNote note = getAccessibleOrThrow(id);
         note.setContent(req.content());
+        note.setUpdatedBy(CurrentUser.get());
         return NoteResponse.from(noteRepository.save(note));
     }
 
     @DeleteMapping("/notes/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        EpicNote note = getOwnedOrThrow(id);
+        EpicNote note = getAccessibleOrThrow(id);
+        if (!note.getAuthor().getId().equals(CurrentUser.get().getId())) {
+            throw ApiException.badRequest("NOT_AUTHOR", "Only the author can delete this note");
+        }
         noteRepository.delete(note);
         return ResponseEntity.noContent().build();
     }
 
-    private EpicNote getOwnedOrThrow(UUID id) {
+    private EpicNote getAccessibleOrThrow(UUID id) {
         EpicNote note = noteRepository.findById(id).orElseThrow(() -> ApiException.notFound("Note not found"));
         epicAccessService.assertAccess(note.getEpic().getId());
-        if (!note.getAuthor().getId().equals(CurrentUser.get().getId())) {
-            throw ApiException.badRequest("NOT_AUTHOR", "Only the author can edit or delete this note");
-        }
         return note;
     }
 }

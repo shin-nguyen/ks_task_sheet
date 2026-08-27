@@ -29,7 +29,7 @@ found by testing — not a step-by-step narration of how each change was verifie
   `hooks/useEpicMembers.ts`, `pages/{EpicsListPage,EpicMembersPage}.tsx`.
 
 ## Notes / Todos / BE-Ticket Requests / Meetings pages
-*(Last updated 2026-08-26)*
+*(Last updated 2026-08-27)*
 - **What it is**: Four epic-scoped collaboration pages — free-form Notes, lightweight Todos, a Pending
   BE-Ticket Requests backlog, and Meeting scheduling/minutes. They share layout and markdown conventions and
   tend to get built out/polished together.
@@ -58,6 +58,16 @@ found by testing — not a step-by-step narration of how each change was verifie
   `lib/textPreview.ts` helper was deleted, no longer exists. Because previews now render real block markup,
   the note/meeting/request cards are `role="button"`+`tabIndex`+`onClick`/`onKeyDown` divs (matching
   `TodosPage`'s `TodoCard`), not `<button>` (which can't validly contain block-level children).
+- **Note edit permissions**: Unlike Todos/BE-Requests/Meetings (unchanged, no cross-user edit), any epic
+  member can now edit any other member's `EpicNote` — not just the author. `EpicNote` gained an
+  `updated_by_id` FK (`V13__epic_notes_updated_by.sql`; backfilled to `author_id` for existing rows) set
+  explicitly in `NoteController` (create sets it to the author, update sets it to `CurrentUser.get()`) —
+  not a JPA lifecycle callback, since `@PreUpdate` has no request/security context. `NoteResponse` carries
+  it as `updatedBy`. **Delete stays author-only** (`NoteController.delete`'s explicit author check) — only
+  edit was opened up, per the request. `NotesPage.tsx`'s `NoteDetailModal` always shows the Edit button now;
+  Delete is gated by a `canDelete` prop (`user.id === note.author.id`), replacing the old `isOwner` prop that
+  gated both. The "· edited" badge (shown whenever `updatedAt !== createdAt`) becomes "· edited by {name}"
+  only when `updatedBy.id !== author.id`, so a self-edit still reads as plain "edited".
 - **Gotchas**:
   - BE-Requests detail modal's inline note/API-design fields use `MarkdownEditor`'s
     `showPreviewToggle={false}` (toolbar only) because that flow saves on textarea blur — a Preview-tab click

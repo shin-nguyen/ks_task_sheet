@@ -80,13 +80,13 @@ function NewNoteModal({ open, onClose, onCreate }: { open: boolean; onClose: () 
 
 function NoteDetailModal({
   note,
-  isOwner,
+  canDelete,
   onClose,
   onSave,
   onDelete,
 }: {
   note: EpicNote;
-  isOwner: boolean;
+  canDelete: boolean;
   onClose: () => void;
   onSave: (content: string) => void;
   onDelete: () => void;
@@ -124,14 +124,14 @@ function NoteDetailModal({
             </Button>
           </>
         ) : (
-          isOwner && (
-            <>
+          <>
+            {canDelete && (
               <Button variant="danger" onClick={onDelete} className="mr-auto">
                 Delete
               </Button>
-              <Button onClick={() => setEditing(true)}>Edit</Button>
-            </>
-          )
+            )}
+            <Button onClick={() => setEditing(true)}>Edit</Button>
+          </>
         )
       }
     >
@@ -140,7 +140,11 @@ function NoteDetailModal({
         <span className="font-semibold text-ink">{note.author.name}</span>
         <span className="text-ink3">·</span>
         <span title={formatFull(note.updatedAt)}>{formatRelative(note.updatedAt)}</span>
-        {edited && <span className="text-ink3">· edited</span>}
+        {edited && (
+          <span className="text-ink3">
+            · edited{note.updatedBy.id !== note.author.id ? ` by ${note.updatedBy.name}` : ''}
+          </span>
+        )}
       </div>
       {editing ? (
         <MarkdownEditor
@@ -223,7 +227,11 @@ export function NotesPage() {
                   <span className="truncate font-semibold text-ink">{note.author.name}</span>
                   <span className="shrink-0 text-ink3">·</span>
                   <span className="shrink-0">{formatRelative(note.updatedAt)}</span>
-                  {edited && <span className="shrink-0 text-ink3">· edited</span>}
+                  {edited && (
+                    <span className="shrink-0 text-ink3">
+                      · edited{note.updatedBy.id !== note.author.id ? ` by ${note.updatedBy.name}` : ''}
+                    </span>
+                  )}
                 </div>
                 <MarkdownPreview content={note.content} maxHeight={92} emptyText="Empty note." className="flex-1" />
               </div>
@@ -244,7 +252,7 @@ export function NotesPage() {
       {openNote && (
         <NoteDetailModal
           note={openNote}
-          isOwner={user?.id === openNote.author.id}
+          canDelete={user?.id === openNote.author.id}
           onClose={() => setOpenNoteId(null)}
           onSave={(content) => updateNote.mutate({ id: openNote.id, content })}
           onDelete={() => {
